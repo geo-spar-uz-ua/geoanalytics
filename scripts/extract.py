@@ -1,8 +1,8 @@
 # Витягує з файлу OpenStreetMap точки, будинки, вулиці й воду для межі карти.
 import osmium, json, sys, collections
-# Використання: python extract.py <файл області .osm.pbf> <вихідний json>
+# Використання: python extract.py <файл області .osm.pbf> <вихідний json> W S E N
 PBF=sys.argv[1]; OUT=sys.argv[2]
-W,S,E_,N=22.20,48.56,22.38,48.68  # межі карти: Ужгород
+W,S,E_,N=[float(x) for x in sys.argv[3:7]]  # межі карти міста
 def inb(lon,lat): return W<=lon<=E_ and S<=lat<=N
 POI_KEYS=['shop','amenity','tourism','railway','highway','public_transport']
 AMEN={'marketplace','hospital','clinic','school','kindergarten','university','college','bank','atm','cafe','fast_food','restaurant','pub','bar','pharmacy','townhall','theatre','cinema','post_office','fuel','bus_station','parking','bicycle_rental'}

@@ -1,14 +1,15 @@
 # Збирає пакет відкритих шарів (тільки OpenStreetMap, без даних компанії) для сторінки карти.
-# Використання: python bundle.py <json з extract.py> <вихідний bundle.json>
+# Використання: python bundle.py <json з extract.py> <вихідний bundle.json> <назва міста> W S E N
 import json, math, collections, statistics
 import numpy as np, h3
 from shapely.geometry import LineString, Point, Polygon
 from shapely.strtree import STRtree
 import sys
-SRC, OUT = sys.argv[1], sys.argv[2]
+SRC, OUT, CITY = sys.argv[1], sys.argv[2], sys.argv[3]
+BBOX=[float(x) for x in sys.argv[4:8]]
 d=json.load(open(SRC))
-LAT0=48.62; LON0=22.29; KX=111320*math.cos(math.radians(LAT0)); KY=110540
-OX,OY=22.20,48.56
+OX,OY=BBOX[0],BBOX[1]
+LAT0=(BBOX[1]+BBOX[3])/2; LON0=(BBOX[0]+BBOX[2])/2; KX=111320*math.cos(math.radians(LAT0)); KY=110540
 def xy(lon,lat): return ((lon-LON0)*KX,(lat-LAT0)*KY)
 def q(lon,lat): return [round((lon-OX)*1e5), round((lat-OY)*1e5)]
 
@@ -70,7 +71,8 @@ for b in d['bld']:
             pg=Polygon([xy(*p) for p in b['pts']])
             if pg.is_valid and pg.area>4: bpoly.append(pg); bmeta.append(b)
         except Exception: pass
-medapt=statistics.median([float(b['lv']) for b in d['bld'] if b['b'] in APT and b['lv'].replace('.','',1).isdigit()])
+_lv=[float(b['lv']) for b in d['bld'] if b['b'] in APT and b['lv'].replace('.','',1).isdigit()]
+medapt=statistics.median(_lv) if _lv else 5.0  # без даних про поверхи в місті: 5, як в Ужгороді
 def levels(b):
     try: return max(1.0,float(b['lv']))
     except Exception: return medapt if b['kind']=='apt' else 1.0
@@ -129,7 +131,10 @@ for p in d['pois']:
         fp=footprint(p['lon'],p['lat'],p['id'] if p['t']=='way' else None)
         rec['ea']=round(min(fp*K,CAP[p['v']])) if fp else None
     pois.append(rec)
-med={v:statistics.median([r['ea'] for r in pois if r['c']=='grocery' and r['v']==v and r['ea']]) for v in CAP}
+def _med(v):
+    xs=[r['ea'] for r in pois if r['c']=='grocery' and r['v']==v and r['ea']]
+    return statistics.median(xs) if xs else {'supermarket':385,'convenience':101}[v]  # без даних у місті: медіани Ужгорода
+med={v:_med(v) for v in CAP}
 for r in pois:
     if r['c']=='grocery':
         if r['ea']: r['es']='контур будівлі × K'
@@ -155,8 +160,8 @@ labels=[]; seenl=set()
 for r in d['roads']:
     if r['h'] in MAJOR and r['name'] and r['name'] not in seenl and len(r['pts'])>=4:
         seenl.add(r['name']); m=r['pts'][len(r['pts'])//2]; labels.append([r['name']]+q(*m))
-B=dict(meta=dict(city='Ужгород',osm=d['meta']['osm_timestamp'],src='https://download.openstreetmap.fr/extracts/europe/ukraine/zakarpattia_oblast-latest.osm.pbf',
-                 license='ODbL 1.0',built=__import__('datetime').date.today().isoformat(),origin=[OX,OY],bbox=[22.20,48.56,22.38,48.68],K=round(K,3),medapt=medapt,cap=CAP,nb=len(d['bld'])),
+B=dict(meta=dict(city=CITY,kxq=round(KX/1e5,5),kyq=round(KY/1e5,5),osm=d['meta']['osm_timestamp'],src=sys.argv[8] if len(sys.argv)>8 else '',
+                 license='ODbL 1.0',built=__import__('datetime').date.today().isoformat(),origin=[OX,OY],bbox=BBOX,K=round(K,3),medapt=medapt,cap=CAP,nb=len(d['bld'])),
        g=dict(n=nodes,e=edges), hex=hexout, pois=pois, roads=roads, water=water, rail=rail, labels=labels)
 s=json.dumps(B,ensure_ascii=False,separators=(',',':'))
 open(OUT,'w').write(s)
