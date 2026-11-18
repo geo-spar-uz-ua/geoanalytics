@@ -1,0 +1,46 @@
+# Збирає шари OpenStreetMap і публікує карту на GitHub Pages.
+# Запускається: 1-го числа щомісяця о 04:00 UTC (06:00 за Києвом взимку), при кожній зміні в репозиторії і вручну.
+name: Оновлення карти
+on:
+  schedule:
+    - cron: '0 4 1 * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Бібліотеки
+        run: pip install osmium==4.3.2 h3==4.5.0 shapely==2.2.0 numpy
+      - name: Завантажити OpenStreetMap, Закарпатська область
+        run: curl -fL --retry 3 -o region.osm.pbf https://download.openstreetmap.fr/extracts/europe/ukraine/zakarpattia_oblast-latest.osm.pbf
+      - name: Порахувати шари
+        run: |
+          mkdir -p docs/data
+          python scripts/extract.py region.osm.pbf city.json
+          python scripts/bundle.py city.json docs/data/bundle_uzhhorod.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
