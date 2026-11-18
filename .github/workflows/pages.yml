@@ -24,13 +24,12 @@ jobs:
           python-version: '3.12'
       - name: Бібліотеки
         run: pip install osmium==4.3.2 h3==4.5.0 shapely==2.2.0 numpy
-      - name: Завантажити OpenStreetMap, Закарпатська область
-        run: curl -fL --retry 3 -o region.osm.pbf https://download.openstreetmap.fr/extracts/europe/ukraine/zakarpattia_oblast-latest.osm.pbf
-      - name: Порахувати шари
+      - name: Завантажити OpenStreetMap, Закарпатська та Івано-Франківська області
         run: |
-          mkdir -p docs/data
-          python scripts/extract.py region.osm.pbf city.json
-          python scripts/bundle.py city.json docs/data/bundle_uzhhorod.json
+          curl -fL --retry 3 -o zak.osm.pbf https://download.openstreetmap.fr/extracts/europe/ukraine/zakarpattia_oblast-latest.osm.pbf
+          curl -fL --retry 3 -o if.osm.pbf https://download.openstreetmap.fr/extracts/europe/ukraine/ivano-frankivsk_oblast-latest.osm.pbf
+      - name: Порахувати шари для всіх міст (scripts/cities.json)
+        run: python scripts/build_all.py zak.osm.pbf if.osm.pbf
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
