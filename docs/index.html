@@ -156,16 +156,20 @@ async function readTabs(){
   if(r.status===403||r.status===404)throw new Error('немає доступу до таблиці «Геоаналітика — дані». Попросіть власницю відкрити вам папку «Геоаналітика_база» і увійдіть під тим акаунтом');
   if(!r.ok)throw new Error('Google Sheets відповів '+r.status);
   return (await r.json()).valueRanges.map(v=>(v.values||[]).filter(row=>row.some(c=>c!==''&&c!=null)))}
+// необов'язкові вкладки: якщо вкладки немає, просто порожньо
+async function readOpt(range){ try{ const r=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE',{headers:{Authorization:'Bearer '+token}});
+  if(!r.ok)return null; return ((await r.json()).values||[]).filter(row=>row.some(c=>c!==''&&c!=null)) }catch(e){return null} }
 const num=v=>{ if(v===''||v==null)return null; const n=typeof v==='number'?v:parseFloat(String(v).replace(/\s/g,'').replace(',','.')); return isNaN(n)?null:n };
 const str=v=>v==null?'':String(v).trim();
 function month(v){ if(typeof v==='number'){const d=new Date(Date.UTC(1899,11,30)+v*864e5); return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')}
   const s=str(v), a=s.match(/^(\d{4})[-.\/](\d{1,2})/), b=s.match(/^(\d{1,2})[-.\/](\d{4})$/); return a?a[1]+'-'+a[2].padStart(2,'0'):b?b[2]+'-'+b[1].padStart(2,'0'):s }
 async function getSheetData(){
-  const [st,ar,cl,ch,ca,ex]=await readTabs(), areas={};
+  const [st,ar,cl,ch,ca,ex]=await readTabs(), hr=await readOpt('Години!A2:F'), areas={};
   ar.forEach(r=>{const a=num(r[6]); if(r[0]&&a)areas[str(r[0])]={area:a,src:str(r[7])}});
   return { stores:st.map(r=>({name:str(r[0]),city:str(r[1]),addr:str(r[2]),area:num(r[3]),format:str(r[4]),opened:str(r[5]),lat:num(r[6]),lon:num(r[7]),csrc:str(r[8])||'координати з таблиці'})).filter(s=>s.name),
     areas, classes:cl.map(r=>({kw:str(r[0]),cls:str(r[1])})).filter(c=>c.kw&&c.cls),
     checks:ch.map(r=>({store:str(r[0]),month:month(r[1]),checks:num(r[2]),revenue:num(r[3])})).filter(c=>c.store&&c.checks),
+    hours:hr==null?null:hr.map(r=>({store:str(r[0]),month:month(r[1]),dow:num(r[2]),hr:num(r[3]),checks:num(r[4]),revenue:num(r[5])})).filter(h=>h.store&&h.checks&&h.dow>=1&&h.dow<=7&&h.hr>=0&&h.hr<=23),
     extra:(ex||[]).map(r=>({name:str(r[0]),chain:str(r[1]),lat:num(r[2]),lon:num(r[3]),area:num(r[4]),src:str(r[5])})).filter(e=>e.name),
     cands:ca.map(r=>({name:str(r[0]),addr:str(r[1]),lat:num(r[2]),lon:num(r[3]),area:num(r[4]),note:str(r[5]),csrc:'координати з таблиці'})).filter(c=>c.name),
     read:new Date().toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
@@ -385,7 +389,7 @@ function card(){ if(sel<0){const miss=S.stores.filter(s=>s.lat==null||s.lon==nul
   if(f.temp)html+='<div class="row" style="margin-bottom:10px"><label for="tarea" class="sub">Площа, м²</label><input type="number" id="tarea" min="20" step="10" value="'+(f.area||'')+'" style="width:90px"><button class="btn" id="tdel" type="button">Прибрати точку</button></div>';
   html+='<h3>Модель Хаффа · розрахунок</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+row('Частка точки в попиті зони',pct(h4.share),pct(h8.share))+'</tbody></table>';
   html+='<div class="sub" style="margin:6px 0 4px">Хто забирає решту в зоні 800 м:</div><table><tbody>'+h8.take.slice(0,5).map(t=>{const c=facs[t[0]]; return '<tr><td>'+dot(c.kind==='own'?'own':c.kind==='cand'?'cand':CK[c.cls])+esc(c.kind==='own'?'SPAR «'+c.name+'»':c.name)+' <span class="sub">≈'+fmt(c.area)+' м²</span></td><td>'+pct(t[1])+'</td></tr>'}).join('')+'</tbody></table>';
-  html+=checksBlock(f);
+  html+=checksBlock(f); html+=f.kind==='own'?profileBlock(f):twinsBlock(f);
   html+='<h3 style="margin-top:14px">Забудова в зоні пішки</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+row('Будинків в OSM',fmt(z4.b.all),fmt(z8.b.all))+row('з них багатоквартирних',z4.b.apt,z8.b.apt)+row('з них приватних',z4.b.house,z8.b.house)+row('тип не вказано',z4.b.yes,z8.b.yes)+'<tr><td>Жителів</td><td class="na" colspan="2">Немає даних</td></tr></tbody></table><div class="sub">Будинки пораховано по шестикутниках, центр яких у зоні.</div>';
   html+='<h3 style="margin-top:14px">Конкуренти в зоні</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+CLASSES.map(c=>row(dot(CK[c])+c,g(z4.cls,c),g(z8.cls,c))).join('')+row(dot('spec')+'Спеціалізовані продуктові',g(z4.cat,'foodspec'),g(z8.cat,'foodspec'))+row(dot('spec')+'Непродовольчі',g(z4.cat,'nonfood'),g(z8.cat,'nonfood'))+'</tbody></table>';
   html+='<h3 style="margin-top:14px">Найближчий конкурент</h3><table><thead><tr><th></th><th>по прямій</th><th>пішки</th></tr></thead><tbody>'+CLASSES.map(c=>{const n=nearest(f,c); return n?'<tr><td>'+dot(CK[c])+c+'<br><span class="sub">'+esc(n.n)+'</span></td><td>'+mtxt(n.d)+'</td><td>'+mtxt(n.w)+'</td></tr>':'<tr><td>'+dot(CK[c])+c+'</td><td class="na" colspan="2">Немає в OSM</td></tr>'}).join('')+'</tbody></table>';
@@ -396,6 +400,31 @@ function card(){ if(sel<0){const miss=S.stores.filter(s=>s.lat==null||s.lon==nul
   if(f.temp){document.getElementById('tarea').onchange=e=>{f.area=+e.target.value||f.area; f.areaNote='введено вручну'; f.areaFromSheet=false; cache={}; card(); draw()};
     document.getElementById('tdel').onclick=()=>{const j=facs.indexOf(f); temp=temp.filter(t=>t!==f); facs.splice(j,1); cache={}; sel=facs.findIndex(x=>x.kind!=='comp'); tabs(); if(sel>=0)select(sel); else card()}}
   calibBox(); draw()}
+function profile(name){ if(!S.hours)return null; const rows=S.hours.filter(h=>h.store===String(name).trim()); if(!rows.length)return null;
+  const m=rows.map(h=>h.month).sort().pop(), R=rows.filter(h=>h.month===m), by=Array(24).fill(0), dw=Array(8).fill(0); let all=0,rev=0,morn=0,eve=0,night=0;
+  R.forEach(h=>{by[h.hr]+=h.checks; dw[h.dow]+=h.checks; all+=h.checks; rev+=h.revenue||0; if(h.hr<10)morn+=h.checks; if(h.hr>=17)eve+=h.checks; if(h.hr>=22||h.hr<6)night+=h.checks});
+  if(!all)return null; const [y,mo]=m.split('-').map(Number), days=new Date(y,mo,0).getDate(), wkend=dw[6]+dw[7];
+  // кількість кожного дня тижня в місяці, щоб порівнювати середній день
+  const cnt=Array(8).fill(0); for(let d=1;d<=days;d++){const w=new Date(y,mo-1,d).getDay()||7; cnt[w]++}
+  const wkAvg=wkend/(cnt[6]+cnt[7]), wdAvg=(all-wkend)/(days-cnt[6]-cnt[7]), peak=by.indexOf(Math.max(...by));
+  const p={month:m,days,by,all,avg:rev?rev/all:null,morn:morn/all,day:1-(morn+eve)/all,eve:eve/all,night:night/all,wk:wkAvg/wdAvg,peak};
+  p.type=p.night>=.05?'цілодобовий':p.wk>=1.25?'вихідного дня, туристичний':p.morn>=.18?'ранковий, транзитний':p.eve>=.36&&p.peak>=17?'вечірній, біля дому':p.eve<=.28?'денний, районний центр':p.peak<=13?'денний':'змішаний';
+  return p}
+const MON=['','січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
+function profileBlock(f){ const p=profile(f.name);
+  if(!p)return S.hours==null?'':'<h3 style="margin-top:14px">Профіль доби</h3><div class="sub">У вкладці «Години» немає рядків для цього магазину.</div>';
+  const W=340,H=70, mx=Math.max(...p.by), bw=W/24;
+  let svg='<svg viewBox="0 0 '+W+' '+(H+16)+'" width="100%" role="img" aria-label="Чеки по годинах">';
+  p.by.forEach((v,h)=>{const bh=mx?v/mx*H:0; svg+='<rect x="'+(h*bw+1).toFixed(1)+'" y="'+(H-bh).toFixed(1)+'" width="'+(bw-2).toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1.5" fill="var(--accent)" opacity="'+(h===p.peak?1:.55)+'"><title>'+h+':00 — '+fmt(Math.round(v/p.days))+' чеків на день</title></rect>'});
+  [0,6,12,18,23].forEach(h=>svg+='<text x="'+(h*bw+bw/2).toFixed(1)+'" y="'+(H+12)+'" font-size="9.5" text-anchor="middle" fill="var(--muted)">'+h+'</text>');
+  svg+='</svg>';
+  const [y,mo]=p.month.split('-');
+  return '<h3 style="margin-top:14px">Профіль доби · '+MON[+mo]+' '+y+'</h3>'+svg+
+   '<table style="margin-top:6px"><tbody>'+row('Частка чеків: до 10 · 10–17 · після 17','<span style="white-space:nowrap">'+pct(p.morn)+' · '+pct(p.day)+' · '+pct(p.eve)+'</span>','')+row('Пікова година',p.peak+':00','')+
+   row('Середній день вихідних до буднього','×'+fmt(p.wk,2),'')+(p.night>=.01?row('Вночі (22–6)',pct(p.night),''):'')+(p.avg?row('Середній чек',fmt(Math.round(p.avg))+' грн',''):'')+'</tbody></table>'+
+   '<div class="sub" style="margin-top:4px">Робоча мітка: <b>'+p.type+'</b>. Пораховано з вкладки «Години» вашої таблиці; мітка — правило за частками доби, не висновок.</div>'}
+function twinsBlock(f){ if(!S.hours)return ''; const L=facs.filter(o=>o.kind==='own').map(o=>[o.name,profile(o.name)]).filter(x=>x[1]);
+  if(!L.length)return ''; return '<h3 style="margin-top:14px">Профілі ваших магазинів у місті</h3><div class="sub" style="margin-bottom:4px">Щоб обрати, з якими магазинами порівнювати цю точку.</div><table><tbody>'+L.map(([n,p])=>'<tr><td>'+esc(n)+'</td><td>'+p.type+'</td></tr>').join('')+'</tbody></table>'}
 function checksBlock(f){
   if(f.kind==='own'){const c=avgChecks(f.name);
     if(!c)return '<h3 style="margin-top:14px">Чеки</h3><div class="sub">У вкладці «Чеки» немає даних для «'+esc(f.name)+'».</div>';
