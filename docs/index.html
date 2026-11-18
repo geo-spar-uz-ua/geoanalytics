@@ -148,7 +148,7 @@ function signIn(prompt){ return new Promise((res,rej)=>{
   tokenClient.callback=r=>{ if(r.error){rej(new Error(r.error));return} token=r.access_token; res() };
   tokenClient.error_callback=e=>rej(new Error(e.type||'вхід скасовано'));
   tokenClient.requestAccessToken({prompt:prompt||''}) }) }
-const TABS=['Магазини!A2:I','Площі конкурентів!A2:H','Класи мереж!A2:B','Чеки!A2:D','Кандидати!A2:F'];
+const TABS=['Магазини!A2:I','Площі конкурентів!A2:H','Класи мереж!A2:B','Чеки!A2:D','Кандидати!A2:F','Додаткові конкуренти!A2:F'];
 async function readTabs(){
   const u='https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEET_ID+'/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING&'+TABS.map(t=>'ranges='+encodeURIComponent(t)).join('&');
   let r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
@@ -161,11 +161,12 @@ const str=v=>v==null?'':String(v).trim();
 function month(v){ if(typeof v==='number'){const d=new Date(Date.UTC(1899,11,30)+v*864e5); return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')}
   const s=str(v), a=s.match(/^(\d{4})[-.\/](\d{1,2})/), b=s.match(/^(\d{1,2})[-.\/](\d{4})$/); return a?a[1]+'-'+a[2].padStart(2,'0'):b?b[2]+'-'+b[1].padStart(2,'0'):s }
 async function getSheetData(){
-  const [st,ar,cl,ch,ca]=await readTabs(), areas={};
+  const [st,ar,cl,ch,ca,ex]=await readTabs(), areas={};
   ar.forEach(r=>{const a=num(r[6]); if(r[0]&&a)areas[str(r[0])]={area:a,src:str(r[7])}});
   return { stores:st.map(r=>({name:str(r[0]),city:str(r[1]),addr:str(r[2]),area:num(r[3]),format:str(r[4]),opened:str(r[5]),lat:num(r[6]),lon:num(r[7]),csrc:str(r[8])||'координати з таблиці'})).filter(s=>s.name),
     areas, classes:cl.map(r=>({kw:str(r[0]),cls:str(r[1])})).filter(c=>c.kw&&c.cls),
     checks:ch.map(r=>({store:str(r[0]),month:month(r[1]),checks:num(r[2]),revenue:num(r[3])})).filter(c=>c.store&&c.checks),
+    extra:(ex||[]).map(r=>({name:str(r[0]),chain:str(r[1]),lat:num(r[2]),lon:num(r[3]),area:num(r[4]),src:str(r[5])})).filter(e=>e.name),
     cands:ca.map(r=>({name:str(r[0]),addr:str(r[1]),lat:num(r[2]),lon:num(r[3]),area:num(r[4]),note:str(r[5]),csrc:'координати з таблиці'})).filter(c=>c.name),
     read:new Date().toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
     sheetUrl:'https://docs.google.com/spreadsheets/d/'+CONFIG.SHEET_ID+'/edit' } }
@@ -231,6 +232,9 @@ function buildFacs(){ facs=[];
     if(cls==='Власна мережа'||cls==='Не конкурент')return;
     const ov=S.areas[p.id]; const area=ov&&+ov.area?+ov.area:p.ea;
     facs.push({kind:'comp',cls,name:p.n||'(без назви в OSM)',area,asrc:ov&&+ov.area?('ваша таблиця'+(ov.src?' · '+ov.src:'')):('оцінка: '+p.es),g:p.g,o:p.o,q:p.p,poi:i}) });
+  (S.extra||[]).forEach(e=>{ if(e.lat==null||e.lon==null||!inBox(+e.lat,+e.lon))return; const cls=classify({n:e.name,b:e.chain}); if(cls==='Власна мережа'||cls==='Не конкурент')return;
+    const q=toQ(+e.lat,+e.lon), [g,o]=snap(q), md=a=>{a=a.filter(Boolean).sort((x,y)=>x-y); return a.length?a[a.length>>1]:null}, mc=md(facs.filter(c=>c.kind==='comp'&&c.cls===cls).map(c=>c.area)), ma=md(facs.filter(c=>c.kind==='comp').map(c=>c.area));
+    facs.push({kind:'comp',cls,name:e.name,area:+e.area||mc||ma||300,asrc:+e.area?'ваша таблиця':mc?'площа не вказана, взято медіану конкурентів цього класу в місті':ma?'площа не вказана, взято медіану всіх конкурентів у місті':'площа не вказана, взято 300 м²',g,o,q,extra:true,src:e.src||'вкладка «Додаткові конкуренти»'}) });
   facs.forEach(f=>{ if(f.kind==='comp'){ f.D=dijkstra(f.g,RMAX+300) } else prep(f) });
   cache={} }
 function addTemp(q){const n=temp.length+1, med=medianOwnArea()||medianSheetArea(); const f={kind:'cand',temp:true,name:'Точка '+n,addr:'поставлена на карті',area:med,areaFromSheet:false,areaNote:med?'площа за замовчуванням — медіана ваших магазинів, змініть нижче':'площа не вказана, введіть нижче',csrc:'клік на карті',q};
@@ -346,7 +350,7 @@ function hover(x,y){ if(!B)return; let best=null,bd=11;
   facs.forEach(f=>{ if(f.kind==='comp'&&!on[CK[f.cls]])return; const d=Math.hypot(sx(f.q[0])-x,sy(f.q[1])-y); if(d<bd){bd=d;best={f}} });
   B.pois.forEach(p=>{ if(p.c==='grocery'||!on[p.c])return; const d=Math.hypot(sx(p.p[0])-x,sy(p.p[1])-y); if(d<bd){bd=d;best={p}} });
   if(!best){tip.style.display='none';return}
-  if(best.f){const f=best.f; tip.innerHTML=f.kind==='comp'?'<b>'+esc(f.name)+'</b><span>'+esc(f.cls)+' · '+esc(TYPE[B.pois[f.poi].v])+'<br>Площа в моделі ≈ '+fmt(f.area)+' м² · '+esc(f.asrc)+'<br>OSM '+esc(B.pois[f.poi].id)+'</span>'
+  if(best.f){const f=best.f; tip.innerHTML=f.kind==='comp'?(f.extra?'<b>'+esc(f.name)+'</b><span>'+esc(f.cls)+' · додано у вашій таблиці<br>Площа в моделі ≈ '+fmt(f.area)+' м² · '+esc(f.asrc)+'<br>Джерело: '+esc(f.src)+'</span>':'<b>'+esc(f.name)+'</b><span>'+esc(f.cls)+' · '+esc(TYPE[B.pois[f.poi].v])+'<br>Площа в моделі ≈ '+fmt(f.area)+' м² · '+esc(f.asrc)+'<br>OSM '+esc(B.pois[f.poi].id)+'</span>')
     :'<b>'+(f.kind==='own'?'SPAR «'+esc(f.name)+'»':'Кандидат «'+esc(f.name)+'»')+'</b><span>'+esc(f.addr)+'</span>'}
   else {const p=best.p; tip.innerHTML='<b>'+esc(p.n||'(без назви в OSM)')+'</b><span>'+esc(TYPE[p.v]||p.v)+'<br>OSM '+esc(p.id)+(p.ts?' · змінено '+esc(p.ts):'')+'</span>'}
   tip.style.display='block'; tip.style.left=Math.min(x+14,W-280)+'px'; tip.style.top=Math.max(8,y-10)+'px'}
@@ -417,6 +421,7 @@ function srcBox(){const m=B.meta, out=S.stores.filter(s=>s.lat==null||s.lon==nul
   document.getElementById('src').innerHTML='<h3>Джерела й метод</h3>'+
   '<p><b>Карта, конкуренти, будинки, вулиці:</b> OpenStreetMap, <a href="'+esc(m.src)+'" target="_blank" rel="noopener">файл області</a>, дані до '+esc(m.osm)+'. Ліцензія '+esc(m.license)+'.</p>'+
   '<p><b>Ваші магазини, кандидати, площі, чеки, класи мереж:</b> ваша Google Таблиця, прочитано '+esc(S.read)+'.</p>'+
+  ((S.extra||[]).length?'<p><b>Конкуренти, яких немає в OSM:</b> '+S.extra.length+' додано у вкладці «Додаткові конкуренти» вашої таблиці.</p>':'')+
   '<p><b>Зони 400 і 800 м:</b> шлях пішки вулицями й доріжками OSM; точка прив\'язується до найближчого перехрестя.</p>'+
   '<p><b>Модель Хаффа:</b> попит шестикутника = житлова площа будинків OSM (контур × поверхи; без поверхів багатоквартирний рахується як '+esc(m.medapt)+' поверхів, решта як 1) ділиться між продуктовими магазинами в межах '+RMAX+' м пішки пропорційно площа<sup>α</sup>/відстань<sup>β</sup>. Це оцінка, а не кількість жителів.</p>'+
   '<p><b>Площі конкурентів:</b> '+(ov?ov+' введено у вашій таблиці; решта — ':'')+'контур будівлі OSM × '+String(m.K).replace('.',',')+' (медіанне відношення торгової площі до контуру ваших магазинів), не більше '+m.cap.supermarket+' м² для супермаркету і '+m.cap.convenience+' м² для магазину біля дому.</p>'+
