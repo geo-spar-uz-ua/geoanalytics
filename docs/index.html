@@ -291,6 +291,28 @@ function readColors(){['land','water','road','road-edge','rail','own','cand','di
 function resize(){const r=cv.parentElement.getBoundingClientRect(); dpr=window.devicePixelRatio||1; W=r.width; H=r.height; cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); draw()}
 function fitTo(q,rad){view.s=Math.min(W,H)/(rad*2.4); view.tx=W/2-mx(q[0])*view.s; view.ty=H/2-my(q[1])*view.s; draw()}
 function draw(){ if(need)return; need=true; requestAnimationFrame(render) }
+// Контур зони пішки: досяжні відрізки вулиць, розширені на 45 м, растр 15 м, marching squares. Кешується в f._iso.
+function isoContour(f,lim){ f._iso=f._iso||{}; if(f._iso[lim])return f._iso[lim];
+  const N=B.g.n, C=15, R=45, segs=[]; let x0=1e18,y0=1e18,x1=-1e18,y1=-1e18;
+  for(let u=0;u<G.n;u++){const du=f.D[u]; if(!(du+f.o<=lim))continue; for(let k=G.off[u];k<G.off[u+1];k++){const v=G.to[k]; if(v<u&&f.D[v]+f.o<=lim)continue;
+    const dv=f.D[v], L=G.len[k]; let t=1; if(!(dv+f.o<=lim))t=Math.max(0,Math.min(1,(lim-du-f.o)/L));
+    const ax=N[2*u]*KXq, ay=N[2*u+1]*KYq, bx=ax+(N[2*v]*KXq-ax)*t, by=ay+(N[2*v+1]*KYq-ay)*t; segs.push([ax,ay,bx,by]);
+    x0=Math.min(x0,ax,bx); y0=Math.min(y0,ay,by); x1=Math.max(x1,ax,bx); y1=Math.max(y1,ay,by)}}
+  if(!segs.length){const qx=f.q[0]*KXq,qy=f.q[1]*KYq; segs.push([qx,qy,qx,qy]); x0=x1=qx; y0=y1=qy}
+  x0-=R+2*C; y0-=R+2*C; x1+=R+2*C; y1+=R+2*C; const nx=Math.ceil((x1-x0)/C)+1, ny=Math.ceil((y1-y0)/C)+1, g=new Uint8Array(nx*ny), rc=Math.ceil(R/C);
+  segs.forEach(([ax,ay,bx,by])=>{const L=Math.hypot(bx-ax,by-ay), n=Math.max(1,Math.ceil(L/(C/2)));
+    for(let i=0;i<=n;i++){const px=ax+(bx-ax)*i/n, py=ay+(by-ay)*i/n, cx=Math.round((px-x0)/C), cy=Math.round((py-y0)/C);
+      for(let dy=-rc;dy<=rc;dy++)for(let dx=-rc;dx<=rc;dx++){ if((dx*dx+dy*dy)*C*C>R*R)continue; const X=cx+dx,Y=cy+dy; if(X>=0&&Y>=0&&X<nx&&Y<ny)g[Y*nx+X]=1 }}});
+  // marching squares: відрізки між серединами ребер клітинок
+  const val=(X,Y)=>X<0||Y<0||X>=nx||Y>=ny?0:g[Y*nx+X], next=new Map(), pt=k=>{const [a,b,c]=k.split(',').map(Number); return c===0?[a+.5,b]:[a,b+.5]};
+  for(let Y=-1;Y<ny;Y++)for(let X=-1;X<nx;X++){const a=val(X,Y),b=val(X+1,Y),c=val(X+1,Y+1),d=val(X,Y+1), m=a|b<<1|c<<2|d<<3; if(m===0||m===15)continue;
+    const T=X+','+Y+',0', Rr=(X+1)+','+Y+',1', Bt=X+','+(Y+1)+',0', Lf=X+','+Y+',1';
+    const P={1:[[Lf,T]],2:[[T,Rr]],3:[[Lf,Rr]],4:[[Rr,Bt]],5:[[Lf,T],[Rr,Bt]],6:[[T,Bt]],7:[[Lf,Bt]],8:[[Bt,Lf]],9:[[Bt,T]],10:[[T,Rr],[Bt,Lf]],11:[[Bt,Rr]],12:[[Rr,Lf]],13:[[Rr,T]],14:[[T,Lf]]}[m];
+    P.forEach(([p,q])=>next.set(p,q))}
+  const out=[], seen=new Set();
+  next.forEach((_,st)=>{ if(seen.has(st))return; const ring=[]; let k=st; while(k&&!seen.has(k)){seen.add(k); const [px,py]=pt(k); ring.push((x0+px*C)/KXq,(y0+py*C)/KYq); k=next.get(k)}
+    if(ring.length>=24)out.push(ring) });
+  return f._iso[lim]=out}
 function poly(flat,close){ctx.moveTo(sx(flat[0]),sy(flat[1])); for(let i=2;i<flat.length;i+=2)ctx.lineTo(sx(flat[i]),sy(flat[i+1])); if(close)ctx.closePath()}
 function lines(list,w,c,dash){ctx.beginPath(); list.forEach(l=>poly(l)); ctx.lineWidth=w; ctx.strokeStyle=c; ctx.setLineDash(dash||[]); ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke(); ctx.setLineDash([])}
 function hexColor(h,i,P){const m=document.getElementById('hexmode').value, f=facs[sel];
@@ -308,12 +330,11 @@ function render(){ need=false; if(!B||!W)return; if(!S){baseOnly();return} ctx.s
   lines(B.roads.b,Math.max(1,7*s)+1.2,col['road-edge']); lines(B.roads.a,Math.max(1.6,11*s)+1.4,col['road-edge']);
   lines(B.roads.b,Math.max(1,7*s),col.road); lines(B.roads.p,Math.max(1,6*s),col.road); lines(B.roads.a,Math.max(1.6,11*s),col.road);
   lines(B.rail,1.2,col.rail,[6,4]);
-  // walking zones of the selected point: reachable street network, widened by 45 m
-  if(f)[[800,.10],[400,.16]].forEach(([lim,al])=>{ ctx.beginPath(); const N=B.g.n;
-    for(let u=0;u<G.n;u++){const du=f.D[u]; if(du+f.o>lim)continue; for(let k=G.off[u];k<G.off[u+1];k++){const v=G.to[k]; if(v<u&&f.D[v]+f.o<=lim)continue;
-      const dv=f.D[v], L=G.len[k]; let t=1; if(!(dv+f.o<=lim))t=Math.max(0,Math.min(1,(lim-du-f.o)/L));
-      const x1=N[2*u],y1=N[2*u+1],x2=N[2*v],y2=N[2*v+1]; ctx.moveTo(sx(x1),sy(y1)); ctx.lineTo(sx(x1+(x2-x1)*t),sy(y1+(y2-y1)*t))}}
-    ctx.strokeStyle=col.zone; ctx.globalAlpha=al; ctx.lineWidth=Math.max(4,90*s); ctx.lineCap='round'; ctx.stroke(); ctx.globalAlpha=1 });
+  // зони пішки: контур 800 м (суцільний) і 400 м (штрихи), як у першій версії; інші ваші магазини — сірий пунктир 800 м
+  facs.forEach((o,j)=>{ if(o.kind!=='own'||j===sel||!o.D)return; ctx.beginPath(); isoContour(o,800).forEach(l=>poly(l,true)); ctx.lineWidth=1; ctx.strokeStyle=col.muted; ctx.setLineDash([3,4]); ctx.stroke(); ctx.setLineDash([]) });
+  if(f&&f.D){ const c8=isoContour(f,800), c4=isoContour(f,400);
+    ctx.beginPath(); c8.forEach(l=>poly(l,true)); ctx.fillStyle=col.zone; ctx.globalAlpha=.07; ctx.fill('evenodd'); ctx.globalAlpha=1; ctx.lineWidth=2.4; ctx.strokeStyle=col.zone; ctx.stroke();
+    ctx.beginPath(); c4.forEach(l=>poly(l,true)); ctx.lineWidth=1.8; ctx.setLineDash([6,5]); ctx.stroke(); ctx.setLineDash([]) }
   if(s>0.45){ctx.font='500 11px Onest, sans-serif'; ctx.fillStyle=col.muted; ctx.textAlign='center'; B.labels.forEach(l=>{const x=sx(l[1]),y=sy(l[2]); if(x>0&&x<W&&y>0&&y<H)ctx.fillText(l[0],x,y-4)})}
   const order=['parking','stop','service','nonfood','foodspec','magnet'];
   order.forEach(c=>{ if(!on[c])return; B.pois.forEach(p=>{ if(p.c===c)markAt(c,p.p) }) });
