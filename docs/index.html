@@ -61,6 +61,7 @@ th:first-child,td:first-child{text-align:left;padding-right:8px}
 thead th{color:var(--muted);font-size:12px;font-weight:500}
 .na{color:var(--muted);font-style:italic}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.facts{border:1px solid var(--cand);border-radius:8px;padding:8px 12px;margin:0 0 12px}.facts h3{margin:0 0 4px}.facts ul{margin:0 0 6px;padding-left:18px;font-size:13px;line-height:1.45}.facts li{margin:2px 0}
 .note{border-left:3px solid var(--warn);padding:6px 10px;background:color-mix(in srgb,var(--warn) 9%,transparent);font-size:12.5px;border-radius:0 6px 6px 0}
 .big{font-family:var(--font-display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -149,7 +150,7 @@ function signIn(prompt){ return new Promise((res,rej)=>{
   tokenClient.callback=r=>{ if(r.error){rej(new Error(r.error));return} token=r.access_token; res() };
   tokenClient.error_callback=e=>rej(new Error(e.type||'вхід скасовано'));
   tokenClient.requestAccessToken({prompt:prompt||''}) }) }
-const TABS=['Магазини!A2:I','Площі конкурентів!A2:H','Класи мереж!A2:B','Чеки!A2:D','Кандидати!A2:F','Додаткові конкуренти!A2:F'];
+const TABS=['Магазини!A2:I','Площі конкурентів!A2:H','Класи мереж!A2:B','Чеки!A2:D','Кандидати!A2:G','Додаткові конкуренти!A2:F'];
 async function readTabs(){
   const u='https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEET_ID+'/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING&'+TABS.map(t=>'ranges='+encodeURIComponent(t)).join('&');
   let r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
@@ -172,7 +173,7 @@ async function getSheetData(){
     checks:ch.map(r=>({store:str(r[0]),month:month(r[1]),checks:num(r[2]),revenue:num(r[3])})).filter(c=>c.store&&c.checks),
     hours:hr==null?null:hr.map(r=>({store:str(r[0]),month:month(r[1]),dow:num(r[2]),hr:num(r[3]),checks:num(r[4]),revenue:num(r[5])})).filter(h=>h.store&&h.checks&&h.dow>=1&&h.dow<=7&&h.hr>=0&&h.hr<=23),
     extra:(ex||[]).map(r=>({name:str(r[0]),chain:str(r[1]),lat:num(r[2]),lon:num(r[3]),area:num(r[4]),src:str(r[5])})).filter(e=>e.name),
-    cands:ca.map(r=>({name:str(r[0]),addr:str(r[1]),lat:num(r[2]),lon:num(r[3]),area:num(r[4]),note:str(r[5]),csrc:'координати з таблиці'})).filter(c=>c.name),
+    cands:ca.map(r=>({name:str(r[0]),addr:str(r[1]),lat:num(r[2]),lon:num(r[3]),area:num(r[4]),note:str(r[5]),facts:str(r[6]),csrc:'координати з таблиці'})).filter(c=>c.name),
     read:new Date().toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
     sheetUrl:'https://docs.google.com/spreadsheets/d/'+CONFIG.SHEET_ID+'/edit' } }
 
@@ -233,7 +234,7 @@ function buildFacs(){ facs=[];
   S.stores.forEach(s=>{ if(s.lat==null||s.lon==null||!inBox(+s.lat,+s.lon))return;
     facs.push({kind:'own',name:s.name,addr:s.addr,area:+s.area||null,areaFromSheet:!!+s.area,format:s.format,opened:s.opened,csrc:s.csrc||'координати з таблиці',q:toQ(+s.lat,+s.lon)}) });
   S.cands.forEach(c=>{ if(c.lat==null||c.lon==null||!inBox(+c.lat,+c.lon))return;
-    facs.push({kind:'cand',name:c.name,addr:c.addr,area:+c.area||null,areaFromSheet:!!+c.area,note:c.note,csrc:c.csrc||'координати з таблиці',q:toQ(+c.lat,+c.lon)}) });
+    facs.push({kind:'cand',name:c.name,addr:c.addr,area:+c.area||null,areaFromSheet:!!+c.area,note:c.note,facts:c.facts,csrc:c.csrc||'координати з таблиці',q:toQ(+c.lat,+c.lon)}) });
   temp.forEach(t=>{ if(qIn(t.q)){t.D=null;t._iso=null;facs.push(t)} });
   const med=medianOwnArea();
   facs.forEach(f=>{ if(!f.area){f.area=med; f.areaNote=med?'площа не вказана, взято медіану ваших магазинів':'площа не вказана'} });
@@ -460,6 +461,7 @@ function card(){ if(sel<0){const miss=S.stores.filter(s=>s.lat==null||s.lon==nul
   const f=facs[sel], z4=inZone(f,400), z8=inZone(f,800), g=(o,k)=>o[k]||0;
   const P=f.kind==='cand'?scenario(true):scenario(false), h4=zoneStats(P,sel,400), h8=zoneStats(P,sel,800);
   let html='<h2>'+(f.kind==='own'?'SPAR «'+esc(f.name)+'»':'Кандидат «'+esc(f.name)+'»')+'</h2><div class="sub">'+esc(f.addr)+' · площа '+(f.areaFromSheet?fmt(f.area)+' м²':f.area?'≈'+fmt(f.area)+' м² ('+esc(f.areaNote)+')':'не вказана')+(f.format?' · '+esc(f.format):'')+(f.opened?' · відкрито '+esc(f.opened):'')+'</div><div class="sub" style="margin:2px 0 10px">Координати: '+esc(f.csrc)+'</div>';
+  if(f.facts){const L=f.facts.split('|').map(x=>x.trim()).filter(Boolean); html+='<div class="facts"><h3>Що відомо про точку</h3><ul>'+L.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+(f.note?'<div class="sub">'+esc(f.note)+'</div>':'')+'</div>'}
   if(f.temp)html+='<div class="row" style="margin-bottom:10px"><label for="tarea" class="sub">Площа, м²</label><input type="number" id="tarea" min="20" step="10" value="'+(f.area||'')+'" style="width:90px"><button class="btn" id="tdel" type="button">Прибрати точку</button></div>';
   html+='<h3>Модель Хаффа · розрахунок</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+row('Частка точки в попиті зони',pct(h4.share),pct(h8.share))+'</tbody></table>';
   html+='<div class="sub" style="margin:6px 0 4px">Хто забирає решту в зоні 800 м:</div><table><tbody>'+h8.take.slice(0,5).map(t=>{const c=facs[t[0]]; return '<tr><td>'+dot(c.kind==='own'?'own':c.kind==='cand'?'cand':CK[c.cls])+esc(c.kind==='own'?'SPAR «'+c.name+'»':c.name)+' <span class="sub">≈'+fmt(c.area)+' м²</span></td><td>'+pct(t[1])+'</td></tr>'}).join('')+'</tbody></table>';
