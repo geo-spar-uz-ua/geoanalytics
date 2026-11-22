@@ -69,7 +69,7 @@ thead th{color:var(--muted);font-size:12px;font-weight:500}
 .layers label{display:flex;align-items:center;gap:6px;cursor:pointer}
 .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted);align-items:center}
 .sw{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:baseline}
-select,input[type=number]{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);max-width:100%}
+select,input[type=number],input[type=search]{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);max-width:100%}
 .sliders{display:grid;gap:4px;margin:10px 0 6px;font-size:13px}
 .sliders input{width:100%;accent-color:var(--accent)}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -80,7 +80,7 @@ select,input[type=number]{font:inherit;padding:4px 6px;border:1px solid var(--li
 <body>
 <header>
   <h1>Геоаналітика SPAR</h1>
-  <label class="sub" for="city" style="display:flex;align-items:center;gap:6px">Місто <select id="city" aria-label="Місто"></select></label>
+  <label class="sub" for="go" style="display:flex;align-items:center;gap:6px">Знайти населений пункт <input id="go" type="search" list="placelist" placeholder="Мукачево, Солочин…" autocomplete="off" style="width:190px"><datalist id="placelist"></datalist></label>
   <span class="asof" id="asof">Завантаження…</span>
   <button class="btn" id="reload" type="button" hidden>Оновити з таблиці</button>
   <a class="btn" id="sheetlink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">Відкрити таблицю</a>
@@ -89,7 +89,8 @@ select,input[type=number]{font:inherit;padding:4px 6px;border:1px solid var(--li
   <div id="mapwrap">
     <canvas id="map" aria-label="Карта з магазинами, конкурентами та зонами пішої доступності"></canvas>
     <div id="loading">Завантажую карту…</div>
-    <div id="gate" hidden><div class="gatebox"><h2>Геоаналітика SPAR</h2><p class="sub">Карта міста відкрита. Ваші магазини, площі, чеки й кандидати підвантажуються з Google Таблиці лише після входу під акаунтом, якому відкрито доступ.</p><button class="btn primary" id="signin" type="button">Увійти через Google</button><p class="sub" id="gatemsg"></p></div></div>
+    <div id="tileload" class="attr" style="left:auto;right:56px;top:12px;bottom:auto;display:none">Підвантажую ділянку…</div>
+    <div id="gate" hidden><div class="gatebox"><h2>Геоаналітика SPAR</h2><p class="sub">Карта Закарпатської та Івано-Франківської областей відкрита. Ваші магазини, площі, чеки й кандидати підвантажуються з Google Таблиці лише після входу під акаунтом, якому відкрито доступ.</p><button class="btn primary" id="signin" type="button">Увійти через Google</button><p class="sub" id="gatemsg"></p></div></div>
     <div id="placehint">Клацніть на карті, щоб поставити точку-кандидата · Esc — скасувати</div>
     <div class="zoom"><button id="zin" type="button" aria-label="Наблизити">+</button><button id="zout" type="button" aria-label="Віддалити">−</button><button id="zfit" type="button" aria-label="Показати обрану точку" title="До обраної точки">◎</button></div>
     <div id="tip"></div>
@@ -138,7 +139,7 @@ select,input[type=number]{font:inherit;padding:4px 6px;border:1px solid var(--li
 const CONFIG = {
   SHEET_ID: '1F5Bx2DNufOOkLQJRhcNFgTsDbsN-ItZE-Bjk88yYW7Y',
   CLIENT_ID: '389589673039-3e2cm3tj7cfkhtcnons5qkugk5cntv9g.apps.googleusercontent.com',
-  CITIES: 'data/cities.json'
+  REGION: 'data/region.json'
 };
 // ---------- читання таблиці через Google Sheets API від імені того, хто увійшов
 let token=null, tokenClient=null;
@@ -178,8 +179,10 @@ async function getSheetData(){
 // ---------- state
 let B=null, S=null, G=null, view={s:.35,tx:0,ty:0}, W=0,H=0,dpr=1, col={}, need=false;
 let facs=[], sel=0, temp=[], placing=false, cache={};
-let KXq=0.7359, KYq=1.1054; // метрів на 1e-5 градуса; беруться з пакета міста
-let CITIES=[], city=null;
+let KXq=0.7359, KYq=1.1054; // метрів на 1e-5 градуса для відстаней; беруться з пакета ділянки
+let DXq=0.7362, DYq=1.1054; // метрів на 1e-5 градуса для малювання; одні на всю карту
+let REG=null, TILES=new Set(), tileKey=null, loadingTile=null, loadTimer=0, lastDet=null;
+const DETAIL_S=0.05; // пікселів на метр: ближче цього підвантажуються деталі ділянки
 const CLASSES=['Прямі','За форматом','Місцеві мережі','Інші продуктові'];
 const CK={'Прямі':'direct','За форматом':'format','Місцеві мережі':'local','Інші продуктові':'other'};
 const LAYERS=[['direct','Прямі конкуренти',true],['format','За форматом',true],['local','Місцеві мережі',true],['other','Інші продуктові',true],['foodspec','Спеціалізовані продуктові',false],['nonfood','Непродовольчі',false],['magnet','Точки тяжіння',true],['service','Кафе, банки, аптеки',false],['stop','Зупинки',false],['parking','Паркінги',false]];
@@ -190,10 +193,12 @@ const fmt=(v,d)=>v==null||isNaN(v)?null:Number(v).toLocaleString('uk-UA',{maximu
 const na='<span class="na">Немає даних</span>';
 const mtxt=v=>v==null?na:fmt(v)+' м', pct=v=>v==null?na:fmt(v*100)+' %';
 
-// ---------- geometry helpers (q = integer 1e-5° offsets from bundle origin)
-const mx=x=>x*KXq, my=y=>-y*KYq;
+// ---------- geometry helpers (q = integer 1e-5° offsets from the common origin of all map squares)
+const mx=x=>x*DXq, my=y=>-y*DYq;
 const sx=x=>mx(x)*view.s+view.tx, sy=y=>my(y)*view.s+view.ty;
-function toQ(lat,lon){return [Math.round((lon-B.meta.origin[0])*1e5),Math.round((lat-B.meta.origin[1])*1e5)]}
+function toQ(lat,lon){const o=REG.meta.origin; return [Math.round((lon-o[0])*1e5),Math.round((lat-o[1])*1e5)]}
+function qIn(q){const o=REG.meta.origin; return !!B&&inBox(q[1]/1e5+o[1],q[0]/1e5+o[0])}
+function tileOfQ(q){return [Math.floor(q[0]/1e5/REG.meta.tw),Math.floor(q[1]/1e5/REG.meta.th)]}
 function inBox(lat,lon){const b=B.meta.bbox; return lon>=b[0]&&lon<=b[2]&&lat>=b[1]&&lat<=b[3]}
 function distQ(a,b){return Math.hypot((a[0]-b[0])*KXq,(a[1]-b[1])*KYq)}
 
@@ -229,7 +234,7 @@ function buildFacs(){ facs=[];
     facs.push({kind:'own',name:s.name,addr:s.addr,area:+s.area||null,areaFromSheet:!!+s.area,format:s.format,opened:s.opened,csrc:s.csrc||'координати з таблиці',q:toQ(+s.lat,+s.lon)}) });
   S.cands.forEach(c=>{ if(c.lat==null||c.lon==null||!inBox(+c.lat,+c.lon))return;
     facs.push({kind:'cand',name:c.name,addr:c.addr,area:+c.area||null,areaFromSheet:!!+c.area,note:c.note,csrc:c.csrc||'координати з таблиці',q:toQ(+c.lat,+c.lon)}) });
-  temp.forEach(t=>facs.push(t));
+  temp.forEach(t=>{ if(qIn(t.q)){t.D=null;t._iso=null;facs.push(t)} });
   const med=medianOwnArea();
   facs.forEach(f=>{ if(!f.area){f.area=med; f.areaNote=med?'площа не вказана, взято медіану ваших магазинів':'площа не вказана'} });
   B.pois.forEach((p,i)=>{ if(p.c!=='grocery')return; const cls=classify(p); p.cls=cls;
@@ -238,11 +243,11 @@ function buildFacs(){ facs=[];
     facs.push({kind:'comp',cls,name:p.n||'(без назви в OSM)',area,asrc:ov&&+ov.area?('ваша таблиця'+(ov.src?' · '+ov.src:'')):('оцінка: '+p.es),g:p.g,o:p.o,q:p.p,poi:i}) });
   (S.extra||[]).forEach(e=>{ if(e.lat==null||e.lon==null||!inBox(+e.lat,+e.lon))return; const cls=classify({n:e.name,b:e.chain}); if(cls==='Власна мережа'||cls==='Не конкурент')return;
     const q=toQ(+e.lat,+e.lon), [g,o]=snap(q), md=a=>{a=a.filter(Boolean).sort((x,y)=>x-y); return a.length?a[a.length>>1]:null}, mc=md(facs.filter(c=>c.kind==='comp'&&c.cls===cls).map(c=>c.area)), ma=md(facs.filter(c=>c.kind==='comp').map(c=>c.area));
-    facs.push({kind:'comp',cls,name:e.name,area:+e.area||mc||ma||300,asrc:+e.area?'ваша таблиця':mc?'площа не вказана, взято медіану конкурентів цього класу в місті':ma?'площа не вказана, взято медіану всіх конкурентів у місті':'площа не вказана, взято 300 м²',g,o,q,extra:true,src:e.src||'вкладка «Додаткові конкуренти»'}) });
+    facs.push({kind:'comp',cls,name:e.name,area:+e.area||mc||ma||300,asrc:+e.area?'ваша таблиця':mc?'площа не вказана, взято медіану конкурентів цього класу на ділянці':ma?'площа не вказана, взято медіану всіх конкурентів на ділянці':'площа не вказана, взято 300 м²',g,o,q,extra:true,src:e.src||'вкладка «Додаткові конкуренти»'}) });
   facs.forEach(f=>{ if(f.kind==='comp'){ f.D=dijkstra(f.g,RMAX+300) } else prep(f) });
   cache={} }
 function addTemp(q){const n=temp.length+1, med=medianOwnArea()||medianSheetArea(); const f={kind:'cand',temp:true,name:'Точка '+n,addr:'поставлена на карті',area:med,areaFromSheet:false,areaNote:med?'площа за замовчуванням — медіана ваших магазинів, змініть нижче':'площа не вказана, введіть нижче',csrc:'клік на карті',q};
-  prep(f); temp.push(f); facs.push(f); cache={}; tabs(); select(facs.indexOf(f))}
+  prep(f); temp.push(f); facs.push(f); cache={}; select(facs.indexOf(f))}
 
 // ---------- Huff
 function params(){return [+document.getElementById('alpha').value,+document.getElementById('beta').value]}
@@ -274,7 +279,7 @@ function calibrate(){const a0=params(); let best=null;
     const r=ratios(scenario(false)); if(r.length<3)continue; const x=r.map(v=>Math.log(v.cap)),y=r.map(v=>Math.log(v.checks)); const mx_=x.reduce((s,v)=>s+v,0)/x.length,my_=y.reduce((s,v)=>s+v,0)/y.length;
     let sxy=0,sxx=0,syy=0; x.forEach((v,i)=>{sxy+=(v-mx_)*(y[i]-my_);sxx+=(v-mx_)**2;syy+=(y[i]-my_)**2}); const rr=sxx&&syy?sxy/Math.sqrt(sxx*syy):-2;
     if(!best||rr>best.r)best={a,b,r:rr,n:r.length}}
-  if(!best){document.getElementById('alpha').value=a0[0];document.getElementById('beta').value=a0[1];cache={};alert0('Для підбору потрібні чеки щонайменше трьох магазинів цього міста.');return}
+  if(!best){document.getElementById('alpha').value=a0[0];document.getElementById('beta').value=a0[1];cache={};alert0('Для підбору потрібні чеки щонайменше трьох магазинів на цій ділянці карти.');return}
   document.getElementById('alpha').value=best.a.toFixed(1);document.getElementById('beta').value=best.b.toFixed(1);cache={};syncOut();
   calibNote='Підібрано за чеками '+best.n+' магазинів: α = '+fmt(best.a,1)+', β = '+fmt(best.b,1)+', кореляція ln(чеки) і ln(захоплений попит) r = '+fmt(best.r,2)+'. Вибірка мала, тож це орієнтир, а не точне налаштування.';
   card();draw()}
@@ -282,7 +287,7 @@ let calibNote='';
 function alert0(t){calibNote=t;calibBox()}
 function calibBox(){const r=sel>=0||facs.length?ratios(scenario(false)):[];
   document.getElementById('calib').innerHTML='<div class="row"><button class="btn" id="calbtn" type="button">Підібрати α і β за чеками</button></div><div class="sub" style="margin-top:6px">'+
-   (calibNote?esc(calibNote):'Зараз типові значення моделі. Підбір працює, коли у вкладці «Чеки» є дані хоча б трьох магазинів цього міста ('+r.length+' зараз).')+'</div>';
+   (calibNote?esc(calibNote):'Зараз типові значення моделі. Підбір працює, коли у вкладці «Чеки» є дані хоча б трьох магазинів на цій ділянці карти ('+r.length+' зараз).')+'</div>';
   document.getElementById('calbtn').onclick=calibrate}
 
 // ---------- drawing
@@ -320,35 +325,58 @@ function hexColor(h,i,P){const m=document.getElementById('hexmode').value, f=fac
   if(m==='huff'){ if(!h[5])return null; const p=shareAt(P,i,sel); if(p<0.005)return null; return p>=.5?col.hex5:p>=.3?col.hex4:p>=.15?col.hex3:p>=.05?col.hex2:col.hex1}
   const w=walk(f,h[6],h[7]); if(w==null||w>1600)return null; return w<=400?col.hex5:w<=800?col.hex4:w<=1200?col.hex3:col.hex2}
 const cv=document.getElementById('map'), ctx=cv.getContext('2d'), tip=document.getElementById('tip');
-function render(){ need=false; if(!B||!W)return; if(!S){baseOnly();return} ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=col.land; ctx.fillRect(0,0,W,H);
-  const s=view.s, f=sel>=0?facs[sel]:null;
+function detail(){return view.s>=DETAIL_S}
+function render(){ need=false; if(!REG||!W)return; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=col.land; ctx.fillRect(0,0,W,H);
+  const s=view.s, det=detail()&&!!B;
+  if(lastDet!==detail()){lastDet=detail(); hexLegend()}
+  drawOverview(det);
+  if(det)drawTile(s);
+  if(S)drawMarks(det);
+  const bar=[100000,50000,20000,10000,5000,2000,1000,500,200,100,50].find(m=>m*s<140)||50, bx=14, by=H-30;
+  ctx.textAlign='left'; ctx.fillStyle=col.panel; ctx.globalAlpha=.85; ctx.fillRect(bx-6,by-18,bar*s+12,26); ctx.globalAlpha=1; ctx.fillStyle=col.ink; ctx.fillRect(bx,by,bar*s,2); ctx.font='500 11px Onest, sans-serif'; ctx.fillText(bar>=1000?(bar/1000)+' км':bar+' м',bx,by-5);
+  maybeLoad()}
+// Оглядовий шар обох областей: щільність забудови, головні дороги, магазини, населені пункти
+function densColor(n){return n>=400?col.hex5:n>=150?col.hex4:n>=60?col.hex3:n>=20?col.hex2:col.hex1}
+function drawOverview(det){const s=view.s;
+  if(!det&&document.getElementById('hexmode').value!=='off'){const r=Math.max(1.6,460*s); ctx.globalAlpha=.75;
+    REG.dens.forEach(d=>{const x=sx(d[0]),y=sy(d[1]); if(x<-r||x>W+r||y<-r||y>H+r)return; ctx.fillStyle=densColor(d[2]); ctx.fillRect(x-r,y-r,2*r,2*r)}); ctx.globalAlpha=1}
+  lines(REG.roads.b,Math.max(.8,5*s),col['road-edge']); lines(REG.roads.a,Math.max(1.2,8*s),col['road-edge']);
+  if(!det){ lines(REG.roads.a,Math.max(.6,6*s),col.road);
+    if(S)['other','local','format','direct'].forEach(k=>{ if(!on[k])return; REG.groc.forEach(g=>{ if(CK[gcls(g)]!==k)return; const x=sx(g[0]),y=sy(g[1]); if(x<-4||x>W+4||y<-4||y>H+4)return; ctx.beginPath(); ctx.arc(x,y,s>.012?3.2:2,0,6.3); ctx.fillStyle=col[k]; ctx.fill() }) });
+    ctx.textAlign='center'; REG.places.forEach(p=>{ const big=p[1]==='city'||p[1]==='town'; if(!big&&s<.012)return; const x=sx(p[2]),y=sy(p[3]); if(x<0||x>W||y<0||y>H)return;
+      ctx.font=(big?'600 12px':'500 10.5px')+' Onest, sans-serif'; ctx.lineWidth=3; ctx.strokeStyle=col.panel; ctx.strokeText(p[0],x,y-6); ctx.fillStyle=big?col.ink:col.muted; ctx.fillText(p[0],x,y-6) }); ctx.textAlign='left' }}
+function gcls(g){ if(g._c===undefined||g._cv!==S.classes){g._c=classify({n:g[2],b:g[3]}); g._cv=S.classes} return g._c}
+// Деталі завантаженої ділянки
+function drawTile(s){ const f=sel>=0?facs[sel]:null;
   ctx.fillStyle=col.water; ctx.beginPath(); B.water.forEach(w=>{if(w[0]==='p')poly(w[1],true)}); ctx.fill();
   lines(B.water.filter(w=>w[0]==='l').map(w=>w[1]),Math.max(1.5,10*s),col.water);
   const hm=document.getElementById('hexmode').value;
-  if(hm!=='off'&&(f||hm==='bld')){const P=f?(f.kind==='cand'?scenario(true):scenario(false)):null; ctx.globalAlpha=.6; B.hex.forEach((h,i)=>{const c=hexColor(h,i,P); if(!c)return; ctx.beginPath(); poly(h[0],true); ctx.fillStyle=c; ctx.fill()}); ctx.globalAlpha=1}
+  if(S&&hm!=='off'&&(f||hm==='bld')){const P=f?(f.kind==='cand'?scenario(true):scenario(false)):null; ctx.globalAlpha=.6; B.hex.forEach((h,i)=>{const c=hexColor(h,i,P); if(!c)return; ctx.beginPath(); poly(h[0],true); ctx.fillStyle=c; ctx.fill()}); ctx.globalAlpha=1}
   if(s>0.28)lines(B.roads.c,Math.max(.6,2*s),col['road-edge']);
   lines(B.roads.b,Math.max(1,7*s)+1.2,col['road-edge']); lines(B.roads.a,Math.max(1.6,11*s)+1.4,col['road-edge']);
   lines(B.roads.b,Math.max(1,7*s),col.road); lines(B.roads.p,Math.max(1,6*s),col.road); lines(B.roads.a,Math.max(1.6,11*s),col.road);
   lines(B.rail,1.2,col.rail,[6,4]);
+  if(!S)return;
   // зони пішки: контур 800 м (суцільний) і 400 м (штрихи), як у першій версії; інші ваші магазини — сірий пунктир 800 м
   facs.forEach((o,j)=>{ if(o.kind!=='own'||j===sel||!o.D)return; ctx.beginPath(); isoContour(o,800).forEach(l=>poly(l,true)); ctx.lineWidth=1; ctx.strokeStyle=col.muted; ctx.setLineDash([3,4]); ctx.stroke(); ctx.setLineDash([]) });
   if(f&&f.D){ const c8=isoContour(f,800), c4=isoContour(f,400);
     ctx.beginPath(); c8.forEach(l=>poly(l,true)); ctx.fillStyle=col.zone; ctx.globalAlpha=.07; ctx.fill('evenodd'); ctx.globalAlpha=1; ctx.lineWidth=2.4; ctx.strokeStyle=col.zone; ctx.stroke();
     ctx.beginPath(); c4.forEach(l=>poly(l,true)); ctx.lineWidth=1.8; ctx.setLineDash([6,5]); ctx.stroke(); ctx.setLineDash([]) }
-  if(s>0.45){ctx.font='500 11px Onest, sans-serif'; ctx.fillStyle=col.muted; ctx.textAlign='center'; B.labels.forEach(l=>{const x=sx(l[1]),y=sy(l[2]); if(x>0&&x<W&&y>0&&y<H)ctx.fillText(l[0],x,y-4)})}
-  const order=['parking','stop','service','nonfood','foodspec','magnet'];
-  order.forEach(c=>{ if(!on[c])return; B.pois.forEach(p=>{ if(p.c===c)markAt(c,p.p) }) });
-  ['other','local','format','direct'].forEach(k=>{ if(!on[k])return; facs.forEach(fc=>{ if(fc.kind==='comp'&&CK[fc.cls]===k)markAt(k,fc.q) }) });
-  ctx.textAlign='left';
-  facs.forEach((fc,i)=>{ if(fc.kind==='comp')return; const x=sx(fc.q[0]),y=sy(fc.q[1]), r=i===sel?9:7;
-    ctx.beginPath(); if(fc.kind==='own')ctx.arc(x,y,r,0,6.3); else {ctx.rect(x-r,y-r,2*r,2*r)}
-    ctx.fillStyle=fc.kind==='own'?col.own:col.cand; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle=col.panel; ctx.stroke();
-    ctx.font=(i===sel?'700 13px':'600 12px')+' Onest, sans-serif'; ctx.lineWidth=3.5; ctx.strokeStyle=col.panel; ctx.strokeText(fc.name,x+12,y+4); ctx.fillStyle=col.ink; ctx.fillText(fc.name,x+12,y+4) });
-  const bar=[2000,1000,500,200,100,50].find(m=>m*s<140)||50, bx=14, by=H-30;
-  ctx.fillStyle=col.panel; ctx.globalAlpha=.85; ctx.fillRect(bx-6,by-18,bar*s+12,26); ctx.globalAlpha=1; ctx.fillStyle=col.ink; ctx.fillRect(bx,by,bar*s,2); ctx.font='500 11px Onest, sans-serif'; ctx.fillText(bar>=1000?(bar/1000)+' км':bar+' м',bx,by-5)}
-function baseOnly(){ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=col.land; ctx.fillRect(0,0,W,H); const s=view.s;
-  ctx.fillStyle=col.water; ctx.beginPath(); B.water.forEach(w=>{if(w[0]==='p')poly(w[1],true)}); ctx.fill(); lines(B.water.filter(w=>w[0]==='l').map(w=>w[1]),Math.max(1.5,10*s),col.water);
-  lines(B.roads.b,Math.max(1,7*s)+1.2,col['road-edge']); lines(B.roads.a,Math.max(1.6,11*s)+1.4,col['road-edge']); lines(B.roads.b,Math.max(1,7*s),col.road); lines(B.roads.a,Math.max(1.6,11*s),col.road); lines(B.rail,1.2,col.rail,[6,4])}
+  if(s>0.45){ctx.font='500 11px Onest, sans-serif'; ctx.fillStyle=col.muted; ctx.textAlign='center'; B.labels.forEach(l=>{const x=sx(l[1]),y=sy(l[2]); if(x>0&&x<W&&y>0&&y<H)ctx.fillText(l[0],x,y-4)}); ctx.textAlign='left'}
+  ['parking','stop','service','nonfood','foodspec','magnet'].forEach(c=>{ if(!on[c])return; B.pois.forEach(p=>{ if(p.c===c)markAt(c,p.p) }) });
+  ['other','local','format','direct'].forEach(k=>{ if(!on[k])return; facs.forEach(fc=>{ if(fc.kind==='comp'&&CK[fc.cls]===k)markAt(k,fc.q) }) }) }
+// Ваші магазини й кандидати: на ділянці — з розрахунками, поза нею — з таблиці
+function regionList(){ if(!S)return []; const L=[];
+  S.stores.forEach(s=>{ if(s.lat!=null&&s.lon!=null)L.push({kind:'own',name:s.name,q:toQ(+s.lat,+s.lon)}) });
+  S.cands.forEach(c=>{ if(c.lat!=null&&c.lon!=null)L.push({kind:'cand',name:c.name,q:toQ(+c.lat,+c.lon)}) });
+  temp.forEach(t=>L.push({kind:'cand',name:t.name,q:t.q,temp:true})); return L}
+function pin(kind,name,q,on1,label){const x=sx(q[0]),y=sy(q[1]); if(x<-20||x>W+200||y<-20||y>H+20)return; const r=on1?9:7;
+  ctx.beginPath(); if(kind==='own')ctx.arc(x,y,r,0,6.3); else ctx.rect(x-r,y-r,2*r,2*r);
+  ctx.fillStyle=kind==='own'?col.own:col.cand; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle=col.panel; ctx.stroke();
+  if(!label)return; ctx.font=(on1?'700 13px':'600 12px')+' Onest, sans-serif'; ctx.lineWidth=3.5; ctx.strokeStyle=col.panel; ctx.strokeText(name,x+12,y+4); ctx.fillStyle=col.ink; ctx.fillText(name,x+12,y+4)}
+function drawMarks(det){ ctx.textAlign='left'; const lab=view.s>.02;
+  if(det)facs.forEach((fc,i)=>{ if(fc.kind!=='comp')pin(fc.kind,fc.name,fc.q,i===sel,true) });
+  regionList().forEach(r=>{ if(det&&qIn(r.q)&&facs.some(f=>f.kind===r.kind&&f.name===r.name))return; pin(r.kind,r.name,r.q,false,lab) })}
 function markAt(c,q){const x=sx(q[0]),y=sy(q[1]); if(x<-8||x>W+8||y<-8||y>H+8)return;
   if(c==='magnet'){ctx.beginPath(); ctx.moveTo(x,y-5.5); ctx.lineTo(x+5.5,y); ctx.lineTo(x,y+5.5); ctx.lineTo(x-5.5,y); ctx.closePath(); ctx.fillStyle=col.magnet; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle=col.panel; ctx.stroke(); return}
   if(c==='stop'||c==='parking'){ctx.fillStyle=c==='stop'?col.stop:col.spec; ctx.fillRect(x-3,y-3,6,6); return}
@@ -357,7 +385,7 @@ function markAt(c,q){const x=sx(q[0]),y=sy(q[1]); if(x<-8||x>W+8||y<-8||y>H+8)re
 
 // ---------- interaction
 const ptrs=new Map(); let moved=false, pinch=0;
-function zoomAt(x,y,k){const ns=Math.max(.03,Math.min(6,view.s*k)); k=ns/view.s; view.tx=x-(x-view.tx)*k; view.ty=y-(y-view.ty)*k; view.s=ns; draw()}
+function zoomAt(x,y,k){const ns=Math.max(.0012,Math.min(6,view.s*k)); k=ns/view.s; view.tx=x-(x-view.tx)*k; view.ty=y-(y-view.ty)*k; view.s=ns; draw()}
 cv.addEventListener('wheel',e=>{e.preventDefault(); const r=cv.getBoundingClientRect(); zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0015))},{passive:false});
 cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,[e.clientX,e.clientY]); moved=false; cv.classList.add('drag'); if(ptrs.size===2){const a=[...ptrs.values()]; pinch=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])}});
 cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();
@@ -368,10 +396,16 @@ cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();
   hover(e.clientX-r.left,e.clientY-r.top)});
 function up(e){ptrs.delete(e.pointerId); pinch=0; if(!ptrs.size)cv.classList.remove('drag');
   if(!moved&&e.type==='pointerup'){const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
-    if(placing){const qx=Math.round((x-view.tx)/view.s/KXq), qy=Math.round(-(y-view.ty)/view.s/KYq); setPlacing(false); addTemp([qx,qy]); return}
-    facs.forEach((f,i)=>{ if(f.kind!=='comp'&&Math.hypot(sx(f.q[0])-x,sy(f.q[1])-y)<13)select(i,false)})}}
+    if(placing){const qx=Math.round((x-view.tx)/view.s/DXq), qy=Math.round(-(y-view.ty)/view.s/DYq); setPlacing(false); placeAt([qx,qy]); return}
+    if(detail()&&B){ let hit=-1; facs.forEach((f,i)=>{ if(f.kind!=='comp'&&Math.hypot(sx(f.q[0])-x,sy(f.q[1])-y)<13)hit=i}); if(hit>=0){select(hit,false);return} }
+    const hitR=regionList().find(z=>Math.hypot(sx(z.q[0])-x,sy(z.q[1])-y)<13); if(hitR)focusFac(hitR)}}
 cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up); cv.addEventListener('pointerleave',()=>tip.style.display='none');
-function hover(x,y){ if(!B)return; let best=null,bd=11;
+function hover(x,y){ if(!REG)return; let best=null,bd=11;
+  if(!(detail()&&B)){ if(S)regionList().forEach(r=>{const d=Math.hypot(sx(r.q[0])-x,sy(r.q[1])-y); if(d<bd){bd=d;best={r}}});
+    if(S&&!best)REG.groc.forEach(g=>{ if(!on[CK[gcls(g)]])return; const d=Math.hypot(sx(g[0])-x,sy(g[1])-y); if(d<bd){bd=d;best={g}} });
+    if(!best){tip.style.display='none';return}
+    tip.innerHTML=best.r?'<b>'+(best.r.kind==='own'?'SPAR «'+esc(best.r.name)+'»':'Кандидат «'+esc(best.r.name)+'»')+'</b><span>клацніть, щоб відкрити розрахунок</span>':'<b>'+esc(best.g[2]||'(без назви в OSM)')+'</b><span>'+esc(gcls(best.g))+' · '+esc(TYPE[best.g[4]])+'<br>OSM '+esc(best.g[5])+'</span>';
+    tip.style.display='block'; tip.style.left=Math.min(x+14,W-280)+'px'; tip.style.top=Math.max(8,y-10)+'px'; return}
   facs.forEach(f=>{ if(f.kind==='comp'&&!on[CK[f.cls]])return; const d=Math.hypot(sx(f.q[0])-x,sy(f.q[1])-y); if(d<bd){bd=d;best={f}} });
   B.pois.forEach(p=>{ if(p.c==='grocery'||!on[p.c])return; const d=Math.hypot(sx(p.p[0])-x,sy(p.p[1])-y); if(d<bd){bd=d;best={p}} });
   if(!best){tip.style.display='none';return}
@@ -384,15 +418,34 @@ document.getElementById('place').onclick=()=>setPlacing(!placing);
 addEventListener('keydown',e=>{if(e.key==='Escape')setPlacing(false)});
 document.getElementById('zin').onclick=()=>zoomAt(W/2,H/2,1.5);
 document.getElementById('zout').onclick=()=>zoomAt(W/2,H/2,1/1.5);
-document.getElementById('zfit').onclick=()=>{ if(sel>=0)fitTo(facs[sel].q,900); else fitCity() };
+document.getElementById('zfit').onclick=()=>{ if(sel>=0)fitTo(facs[sel].q,900); else fitRegion() };
 document.getElementById('hexmode').onchange=()=>{hexLegend();draw()};
 function syncOut(){['alpha','beta'].forEach(id=>document.getElementById(id+'v').textContent=(+document.getElementById(id).value).toLocaleString('uk-UA',{minimumFractionDigits:1}))}
 ['alpha','beta'].forEach(id=>document.getElementById(id).oninput=()=>{syncOut(); cache={}; calibNote=''; card(); draw()});
 
 // ---------- panel
-function tabs(){document.getElementById('tabs').innerHTML=facs.map((f,i)=>f.kind==='comp'?'':'<button type="button" class="'+(f.kind==='cand'?'cand':'')+'" data-i="'+i+'" aria-pressed="'+(i===sel)+'">'+esc(f.name)+'</button>').join('');
-  [...document.getElementById('tabs').children].forEach(b=>b.onclick=()=>select(+b.dataset.i))}
-function select(i,zoom){sel=i; [...document.getElementById('tabs').children].forEach(b=>b.setAttribute('aria-pressed',+b.dataset.i===i)); card(); if(zoom!==false)fitTo(facs[i].q,900); else draw()}
+function tabs(){const cur=sel>=0?facs[sel]:null, L=regionList();
+  document.getElementById('tabs').innerHTML=L.map((f,k)=>'<button type="button" class="'+(f.kind==='cand'?'cand':'')+'" data-k="'+k+'" aria-pressed="'+!!(cur&&cur.kind===f.kind&&cur.name===f.name)+'">'+esc(f.name)+'</button>').join('');
+  [...document.getElementById('tabs').children].forEach(b=>b.onclick=()=>focusFac(L[+b.dataset.k]))}
+function select(i,zoom){sel=i; tabs(); card(); if(zoom!==false)fitTo(facs[i].q,900); else draw()}
+// перейти до магазину чи кандидата будь-де на карті: підвантажити його ділянку й відкрити розрахунок
+async function focusFac(r){ fitTo(r.q,900); const t=tileOfQ(r.q); await loadTile(t[0],t[1]);
+  const i=facs.findIndex(f=>f.kind===r.kind&&f.name===r.name); if(i>=0)select(i,false); else {sel=-1; tabs(); card()} }
+// автоматичне підвантаження ділянки, коли карту наблизили
+function maybeLoad(){ if(!detail()||!REG)return; const c=[(W/2-view.tx)/view.s/DXq,-(H/2-view.ty)/view.s/DYq];
+  if(B&&tileKey){const k=B.meta.core, o=REG.meta.origin, lon=c[0]/1e5+o[0], lat=c[1]/1e5+o[1], m=.01; if(lon>=k[0]-m&&lon<=k[2]+m&&lat>=k[1]-m&&lat<=k[3]+m)return}
+  const t=tileOfQ(c), key=t[0]+'_'+t[1]; if(key===tileKey||key===loadingTile)return;
+  clearTimeout(loadTimer); loadTimer=setTimeout(()=>loadTile(t[0],t[1]),350)}
+async function loadTile(i,j){ const key=i+'_'+j; if(key===tileKey)return; if(!TILES.has(key)){tileKey=key; B=null; facs=[]; sel=-1; if(S){tabs(); card()} draw(); return}
+  if(loadingTile===key){ while(loadingTile===key)await new Promise(r=>setTimeout(r,80)); return }
+  loadingTile=key; const el=document.getElementById('tileload'); el.style.display='';
+  const keep=sel>=0&&facs[sel]?{kind:facs[sel].kind,name:facs[sel].name}:null;
+  try{ const b=await (await fetch('data/t/'+key+'.json',{cache:'no-cache'})).json(); if(loadingTile!==key)return;
+    B=b; tileKey=key; KXq=B.meta.kxq||KXq; KYq=B.meta.kyq||KYq; buildGraph(); cache={}; calibNote='';
+    if(S){ buildFacs(); sel=keep?facs.findIndex(f=>f.kind===keep.kind&&f.name===keep.name):-1; tabs(); layersBox(); srcBox(); card() } draw() }
+  catch(e){ alert0('Не вдалося підвантажити ділянку карти: '+(e.message||e)) }
+  finally{ if(loadingTile===key)loadingTile=null; el.style.display='none' } }
+async function placeAt(q){ const t=tileOfQ(q); await loadTile(t[0],t[1]); if(!B||!qIn(q)){alert0('Тут немає даних OpenStreetMap про вулиці, точку не порахувати.');return} addTemp(q)}
 function row(l,a,b){return '<tr><td>'+l+'</td><td>'+a+'</td><td>'+(b===undefined?'':b)+'</td></tr>'}
 const dot=c=>'<span class="dot" style="background:var(--'+c+')"></span>';
 function inZone(f,lim){const res={cls:{},cat:{},b:{all:0,apt:0,house:0,yes:0}};
@@ -402,7 +455,7 @@ function inZone(f,lim){const res={cls:{},cat:{},b:{all:0,apt:0,house:0,yes:0}};
   return res}
 function nearest(f,cls){let best=null; facs.forEach(c=>{ if(c.kind!=='comp'||c.cls!==cls)return; const d=distQ(f.q,c.q); if(!best||d<best.d)best={d,c} }); if(!best)return null; return {n:best.c.name,d:best.d,w:walk(f,best.c.g,best.c.o)}}
 function card(){ if(sel<0){const miss=S.stores.filter(s=>s.lat==null||s.lon==null).map(s=>s.name);
-    document.getElementById('card').innerHTML='<h2>'+esc(city.name)+'</h2><div class="note" style="margin-top:8px">У таблиці немає вашого магазину з координатами в цьому місті. Додайте широту й довготу у вкладку «Магазини» (у Google Maps: правий клік на будівлі, перший рядок) і натисніть «Оновити з таблиці». Або поставте точку на карті кнопкою «+ Точка на карті».'+(miss.length?'<br><br>Без координат зараз: '+miss.map(esc).join(', ')+'.':'')+'</div>';
+    document.getElementById('card').innerHTML='<h2>Обидві області</h2><div class="note" style="margin-top:8px">Оберіть магазин або кандидата у списку вище, знайдіть населений пункт угорі чи просто наблизьте карту: деталі ділянки (вулиці, зони пішки, модель Хаффа) підвантажаться самі. Нову точку ставить кнопка «+ Точка на карті».'+(miss.length?'<br><br>Без координат у вкладці «Магазини» зараз: '+miss.map(esc).join(', ')+'.':'')+'</div>';
     calibBox(); draw(); return}
   const f=facs[sel], z4=inZone(f,400), z8=inZone(f,800), g=(o,k)=>o[k]||0;
   const P=f.kind==='cand'?scenario(true):scenario(false), h4=zoneStats(P,sel,400), h8=zoneStats(P,sel,800);
@@ -445,7 +498,7 @@ function profileBlock(f){ const p=profile(f.name);
    row('Середній день вихідних до буднього','×'+fmt(p.wk,2),'')+(p.night>=.01?row('Вночі (22–6)',pct(p.night),''):'')+(p.avg?row('Середній чек',fmt(Math.round(p.avg))+' грн',''):'')+'</tbody></table>'+
    '<div class="sub" style="margin-top:4px">Робоча мітка: <b>'+p.type+'</b>. Пораховано з вкладки «Години» вашої таблиці; мітка — правило за частками доби, не висновок.</div>'}
 function twinsBlock(f){ if(!S.hours)return ''; const L=facs.filter(o=>o.kind==='own').map(o=>[o.name,profile(o.name)]).filter(x=>x[1]);
-  if(!L.length)return ''; return '<h3 style="margin-top:14px">Профілі ваших магазинів у місті</h3><div class="sub" style="margin-bottom:4px">Щоб обрати, з якими магазинами порівнювати цю точку.</div><table><tbody>'+L.map(([n,p])=>'<tr><td>'+esc(n)+'</td><td>'+p.type+'</td></tr>').join('')+'</tbody></table>'}
+  if(!L.length)return ''; return '<h3 style="margin-top:14px">Профілі ваших магазинів на ділянці</h3><div class="sub" style="margin-bottom:4px">Щоб обрати, з якими магазинами порівнювати цю точку.</div><table><tbody>'+L.map(([n,p])=>'<tr><td>'+esc(n)+'</td><td>'+p.type+'</td></tr>').join('')+'</tbody></table>'}
 function checksBlock(f){
   if(f.kind==='own'){const c=avgChecks(f.name);
     if(!c)return '<h3 style="margin-top:14px">Чеки</h3><div class="sub">У вкладці «Чеки» немає даних для «'+esc(f.name)+'».</div>';
@@ -454,7 +507,7 @@ function checksBlock(f){
   // candidate: forecast and cannibalisation
   const base=scenario(false), wit=scenario(true), R=ratios(base);
   let h='<h3 style="margin-top:14px">Прогноз · розрахунок моделі</h3>';
-  if(R.length<3) return h+'<div class="sub">Прогноз чеків з\'явиться, коли у вкладці «Чеки» будуть дані щонайменше трьох ваших магазинів цього міста (зараз '+R.length+').</div>';
+  if(R.length<3) return h+'<div class="sub">Прогноз чеків з\'явиться, коли у вкладці «Чеки» будуть дані щонайменше трьох ваших магазинів на цій ділянці карти (зараз '+R.length+').</div>';
   const rs=R.map(r=>r.ratio).sort((a,b)=>a-b), med=rs[rs.length>>1], cap=captured(wit,sel);
   h+='<div class="kpis"><div class="kpi"><div class="big">'+fmt(Math.round(cap*med/10)*10)+'</div><div class="sub">чеків на місяць, медіана</div></div><div class="kpi"><div class="big">'+fmt(cap*rs[0])+'–'+fmt(cap*rs[rs.length-1])+'</div><div class="sub">діапазон за вашими '+R.length+' магазинами</div></div></div>';
   h+='<div class="sub" style="margin-top:6px">Захоплений попит точки × відношення «чеки / захоплений попит» ваших магазинів. Транзит, туристів і формат модель не бачить.</div>';
@@ -462,50 +515,51 @@ function checksBlock(f){
   h+='<h3 style="margin-top:14px">Що забере у ваших магазинів</h3>'+(can.length?'<table><thead><tr><th></th><th>попиту</th><th>чеків/міс.</th></tr></thead><tbody>'+can.map(x=>row('SPAR «'+esc(x.o.name)+'»','−'+pct(x.loss),x.ch==null?na:'−'+fmt(x.ch))).join('')+'</tbody></table>':'<div class="sub">Помітного перетоку з ваших магазинів модель не бачить.</div>');
   return h}
 function hexLegend(){const v=document.getElementById('hexmode').value, sw=(c,t)=>'<span><span class="sw" style="background:var(--'+c+')"></span>'+t+'</span>';
+  if(REG&&!detail()){document.getElementById('hexlegend').innerHTML=v==='off'?'':'<span>Оглядова карта, будинків OSM у шестикутнику ≈0,7 км²:</span>'+sw('hex1','1–19')+sw('hex2','20–59')+sw('hex3','60–149')+sw('hex4','150–399')+sw('hex5','400+');return}
   document.getElementById('hexlegend').innerHTML=v==='huff'?sw('hex1','до 5 %')+sw('hex2','5–15 %')+sw('hex3','15–30 %')+sw('hex4','30–50 %')+sw('hex5','50 % і більше'):v==='walk'?sw('hex5','до 400 м')+sw('hex4','до 800 м')+sw('hex3','до 1,2 км')+sw('hex2','до 1,6 км'):v==='bld'?sw('hex1','1–2')+sw('hex2','3–6')+sw('hex3','7–11')+sw('hex4','12–19')+sw('hex5','20+ будинків'):''}
-function layersBox(){const cnt={}; facs.forEach(f=>{if(f.kind==='comp'){const k=CK[f.cls];cnt[k]=(cnt[k]||0)+1}}); B.pois.forEach(p=>{if(p.c!=='grocery')cnt[p.c]=(cnt[p.c]||0)+1});
+function layersBox(){const cnt={}; facs.forEach(f=>{if(f.kind==='comp'){const k=CK[f.cls];cnt[k]=(cnt[k]||0)+1}}); if(B)B.pois.forEach(p=>{if(p.c!=='grocery')cnt[p.c]=(cnt[p.c]||0)+1});
   const lc={direct:'direct',format:'format',local:'local',other:'other',foodspec:'spec',nonfood:'spec',magnet:'magnet',service:'svc',stop:'stop',parking:'spec'};
   document.getElementById('layers').innerHTML=LAYERS.map(l=>'<label><input type="checkbox" id="ly-'+l[0]+'" '+(on[l[0]]?'checked':'')+'><span class="dot" style="background:var(--'+lc[l[0]]+');margin:0"></span>'+l[1]+' <span class="sub">'+(cnt[l[0]]||0)+'</span></label>').join('');
   LAYERS.forEach(l=>document.getElementById('ly-'+l[0]).onchange=e=>{on[l[0]]=e.target.checked;draw()})}
-function srcBox(){const m=B.meta, out=S.stores.filter(s=>s.lat==null||s.lon==null).map(s=>s.name), ov=Object.keys(S.areas).length;
+function srcBox(){const m=B?B.meta:{medapt:5,K:0.369,cap:{supermarket:2500,convenience:300}}, rm=REG.meta, out=S.stores.filter(s=>s.lat==null||s.lon==null).map(s=>s.name), ov=Object.keys(S.areas).length;
   document.getElementById('src').innerHTML='<h3>Джерела й метод</h3>'+
-  '<p><b>Карта, конкуренти, будинки, вулиці:</b> OpenStreetMap, <a href="'+esc(m.src)+'" target="_blank" rel="noopener">файл області</a>, дані до '+esc(m.osm)+'. Ліцензія '+esc(m.license)+'.</p>'+
+  '<p><b>Карта, конкуренти, будинки, вулиці:</b> OpenStreetMap, файли <a href="'+esc(rm.src[0])+'" target="_blank" rel="noopener">Закарпатської</a> та <a href="'+esc(rm.src[1])+'" target="_blank" rel="noopener">Івано-Франківської</a> областей, дані до '+esc(rm.osm)+'. Ліцензія '+esc(rm.license)+'.</p>'+
   '<p><b>Ваші магазини, кандидати, площі, чеки, класи мереж:</b> ваша Google Таблиця, прочитано '+esc(S.read)+'.</p>'+
   ((S.extra||[]).length?'<p><b>Конкуренти, яких немає в OSM:</b> '+S.extra.length+' додано у вкладці «Додаткові конкуренти» вашої таблиці.</p>':'')+
   '<p><b>Зони 400 і 800 м:</b> шлях пішки вулицями й доріжками OSM; точка прив\'язується до найближчого перехрестя.</p>'+
   '<p><b>Модель Хаффа:</b> попит шестикутника = житлова площа будинків OSM (контур × поверхи; без поверхів багатоквартирний рахується як '+esc(m.medapt)+' поверхів, решта як 1) ділиться між продуктовими магазинами в межах '+RMAX+' м пішки пропорційно площа<sup>α</sup>/відстань<sup>β</sup>. Це оцінка, а не кількість жителів.</p>'+
   '<p><b>Площі конкурентів:</b> '+(ov?ov+' введено у вашій таблиці; решта — ':'')+'контур будівлі OSM × '+String(m.K).replace('.',',')+' (медіанне відношення торгової площі до контуру ваших магазинів), не більше '+m.cap.supermarket+' м² для супермаркету і '+m.cap.convenience+' м² для магазину біля дому.</p>'+
   (out.length?'<p><b>Без координат у таблиці:</b> '+out.map(esc).join(', ')+'. На карту вони потраплять, щойно у вкладці «Магазини» з\'являться широта й довгота.</p>':'')+
-  '<p><b>Міста на карті:</b> '+CITIES.map(c=>esc(c.name)).join(', ')+'.</p>'+
+  '<p><b>Покриття:</b> обидві області цілком. Деталі рахуються квадратами ≈7×8 км ('+REG.tiles.length+' квадратів) із запасом ≈3 км навколо, тож зона пішки й модель Хаффа біля краю квадрата не обрізаються. Оглядова щільність забудови — шестикутники ≈0,7 км².</p>'+
   '<p><b>Обмеження:</b> OSM складають добровольці, тому частини магазинів може не бути, а закриті можуть лишатися. Жителів, доходів і людинопотоку тут немає: перевіреного відкритого джерела на рівні кварталу немає.</p>'}
 
 // ---------- boot
 async function loadSheet(){S=await getSheetData(); S.areas=S.areas||{}; S.classes=S.classes||[]; S.checks=S.checks||[]; S.cands=S.cands||[];
-  const keepSel=sel>=0&&facs[sel]&&facs[sel].name; buildFacs(); const i=facs.findIndex(f=>f.kind!=='comp'&&f.name===keepSel); sel=i>=0?i:facs.findIndex(f=>f.kind!=='comp');
+  const keepSel=sel>=0&&facs[sel]&&facs[sel].name; if(B){buildFacs(); sel=facs.findIndex(f=>f.kind!=='comp'&&f.name===keepSel)} else {facs=[]; sel=-1}
   document.getElementById('reload').hidden=false;
   asof();
   if(S.sheetUrl){const a=document.getElementById('sheetlink'); a.href=S.sheetUrl; a.style.display=''}
   tabs(); layersBox(); srcBox(); card(); return true}
-function asof(){const t=new Date(B.meta.osm); document.getElementById('asof').textContent='OpenStreetMap станом на '+t.toLocaleDateString('uk-UA',{timeZone:'UTC'})+(S?' · таблицю прочитано '+S.read:' · увійдіть, щоб побачити ваші дані')}
-function fitCity(){const b=B.meta.bbox, o=B.meta.origin, w=(b[2]-b[0])*1e5, h=(b[3]-b[1])*1e5; view.s=Math.min(W/(w*KXq),H/(h*KYq))*1.05; view.tx=W/2-mx(w/2)*view.s; view.ty=H/2-my(h/2)*view.s; draw()}
-async function loadCity(slug){ city=CITIES.find(c=>c.slug===slug)||CITIES[0];
-  document.getElementById('city').value=city.slug; document.getElementById('loading').style.display=''; document.getElementById('loading').textContent='Завантажую карту: '+city.name+'…';
-  B=await (await fetch(city.file,{cache:'no-cache'})).json(); KXq=B.meta.kxq||KXq; KYq=B.meta.kyq||KYq; buildGraph(); temp=[]; facs=[]; sel=-1; cache={}; calibNote='';
-  try{ if(location.hash.slice(1)!==city.slug)history.replaceState(null,'','#'+city.slug) }catch(e){}
-  document.getElementById('loading').style.display='none'; resize();
-  if(S){ buildFacs(); sel=facs.findIndex(f=>f.kind!=='comp'); tabs(); layersBox(); srcBox(); card(); if(sel>=0)fitTo(facs[sel].q,900); else fitCity() } else fitCity();
-  asof() }
+function asof(){const t=new Date(REG.meta.osm); document.getElementById('asof').textContent='OpenStreetMap станом на '+(isNaN(t)?'—':t.toLocaleDateString('uk-UA',{timeZone:'UTC'}))+(S?' · таблицю прочитано '+S.read:' · увійдіть, щоб побачити ваші дані')}
+function fitRegion(){ if(!REG||!REG.tiles.length)return; const m=REG.meta; let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  REG.tiles.forEach(t=>{x0=Math.min(x0,t[0]);y0=Math.min(y0,t[1]);x1=Math.max(x1,t[0]+1);y1=Math.max(y1,t[1]+1)});
+  const w=(x1-x0)*m.tw*1e5, h=(y1-y0)*m.th*1e5; view.s=Math.min(W/(w*DXq),H/(h*DYq))*.95;
+  view.tx=W/2-mx(x0*m.tw*1e5+w/2)*view.s; view.ty=H/2-my(y0*m.th*1e5+h/2)*view.s; draw()}
+function goPlace(name){ const n=String(name||'').trim().toLowerCase(); if(!n)return; const P=REG.places.filter(p=>p[0].toLowerCase()===n);
+  const p=P.find(p=>p[1]==='city')||P.find(p=>p[1]==='town')||P[0]; if(!p)return; fitTo([p[2],p[3]],p[1]==='city'?2600:p[1]==='town'?1800:1200)}
+function goHash(){ const m=location.hash.slice(1).match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/); if(m){fitTo(toQ(+m[1],+m[2]),1200);return true}
+  const h=decodeURIComponent(location.hash.slice(1)); if(h&&REG.places.some(p=>p[0].toLowerCase()===h.toLowerCase())){goPlace(h);return true} return false}
 async function boot(){try{
-  CITIES=await (await fetch(CONFIG.CITIES,{cache:'no-cache'})).json();
-  document.getElementById('city').innerHTML=CITIES.map(c=>'<option value="'+esc(c.slug)+'">'+esc(c.name)+'</option>').join('');
-  document.getElementById('city').onchange=e=>loadCity(e.target.value);
-  readColors(); await loadCity(location.hash.slice(1)||'uzhhorod');
+  REG=await (await fetch(CONFIG.REGION,{cache:'no-cache'})).json(); DXq=REG.meta.kxq; DYq=REG.meta.kyq; TILES=new Set(REG.tiles.map(t=>t[0]+'_'+t[1]));
+  const seen=new Set(); document.getElementById('placelist').innerHTML=REG.places.filter(p=>p[1]!=='hamlet').sort((a,b)=>({city:0,town:1,village:2}[a[1]]-{city:0,town:1,village:2}[b[1]])||a[0].localeCompare(b[0],'uk')).filter(p=>!seen.has(p[0])&&seen.add(p[0])).map(p=>'<option value="'+esc(p[0])+'">').join('');
+  const go=document.getElementById('go'); go.onchange=()=>goPlace(go.value); go.onkeydown=e=>{if(e.key==='Enter')goPlace(go.value)};
+  document.getElementById('loading').style.display='none'; readColors(); resize(); if(!goHash())fitRegion(); asof(); hexLegend();
   document.getElementById('gate').hidden=false;
  }catch(e){document.getElementById('loading').style.display=''; document.getElementById('loading').textContent='Не вдалося завантажити шари карти: '+(e&&e.message||e)}}
-addEventListener('hashchange',()=>{const h=location.hash.slice(1); if(city&&h&&h!==city.slug&&CITIES.some(c=>c.slug===h))loadCity(h)});
+addEventListener('hashchange',()=>{ if(REG)goHash() });
 document.getElementById('signin').onclick=async()=>{const m=document.getElementById('gatemsg'); m.textContent='Відкриваю вхід Google…';
   try{ await signIn('select_account'); m.textContent='Читаю таблицю…';
-    await loadSheet(); document.getElementById('gate').hidden=true; hexLegend(); syncOut(); if(sel>=0)fitTo(facs[sel].q,900); else fitCity() }
+    await loadSheet(); document.getElementById('gate').hidden=true; hexLegend(); syncOut(); draw() }
   catch(e){ m.textContent='Не вдалося: '+(e.message||e)+'.' } };
 document.getElementById('reload').onclick=async()=>{const b=document.getElementById('reload'); b.disabled=true; b.textContent='Читаю таблицю…'; try{await loadSheet(); draw()}catch(e){alert0('Не вдалося прочитати таблицю: '+(e.message||e))} b.disabled=false; b.textContent='Оновити з таблиці'};
 new ResizeObserver(resize).observe(cv.parentElement);
