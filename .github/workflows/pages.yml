@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,7 +29,7 @@ jobs:
         run: |
           curl -fL --retry 3 -o zak.osm.pbf https://download.openstreetmap.fr/extracts/europe/ukraine/zakarpattia_oblast-latest.osm.pbf
           curl -fL --retry 3 -o if.osm.pbf https://download.openstreetmap.fr/extracts/europe/ukraine/ivano-frankivsk_oblast-latest.osm.pbf
-      - name: Порахувати шари для всіх міст (scripts/cities.json)
+      - name: Порахувати оглядовий шар і квадрати обох областей
         run: python scripts/build_all.py zak.osm.pbf if.osm.pbf
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
