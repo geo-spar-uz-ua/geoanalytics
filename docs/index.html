@@ -75,6 +75,50 @@ select,input[type=number],input[type=search]{font:inherit;padding:4px 6px;border
 .sliders input{width:100%;accent-color:var(--accent)}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .src{font-size:12px;color:var(--muted)} .src p{margin:0 0 6px}
+main{position:relative}
+#tabs{display:none!important}
+.home-actions{display:grid;gap:8px;margin:10px 0 16px}
+.action{display:grid;grid-template-columns:28px 1fr;gap:2px 10px;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit}
+.action:hover,.action[aria-pressed="true"]{border-color:var(--accent)}
+.action .n{grid-row:span 2;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+.action b{font-weight:600}
+.city{font-size:12px;color:var(--muted);margin:10px 0 4px}
+.back{background:none;border:0;color:var(--accent);padding:0;cursor:pointer;font:inherit;font-weight:500;margin:0 0 8px}
+.badge{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);vertical-align:middle;margin-left:6px;font-family:var(--font-body);font-weight:500}
+.badge.cand{border-color:var(--cand);color:var(--cand);border-style:dashed}
+.kpi .lbl{font-size:12px;color:var(--muted);margin-top:2px} .kpi .bm{font-size:11.5px;color:var(--muted);margin-top:4px;border-top:1px dashed var(--line);padding-top:3px}
+.kpi .tag{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)} .kpi .big{font-size:19px}
+details{border-top:1px solid var(--line);padding-top:9px}
+details>summary{cursor:pointer;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:8px}
+details>summary::after{content:'+';font-size:14px} details[open]>summary::after{content:'−'}
+details>summary::-webkit-details-marker{display:none}
+details>*:not(summary){margin-top:8px}
+#card details{margin-top:12px}
+#legend{position:absolute;left:8px;bottom:56px;background:color-mix(in srgb,var(--panel) 93%,transparent);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;display:grid;gap:3px;max-width:250px}
+#legend[hidden]{display:none}
+#legend .li{display:flex;align-items:center;gap:7px}
+.sym{display:inline-block;width:11px;height:11px;flex:none}
+#help,#compare{position:absolute;inset:0;z-index:20;background:color-mix(in srgb,var(--bg) 75%,transparent);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:22px 16px}
+#help[hidden],#compare[hidden]{display:none}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:18px 22px;max-width:720px;width:100%}
+#compare .sheet{max-width:1500px}
+.sheet h2{font-size:17px} .sheet h3{margin-top:14px}
+.steps{display:grid;gap:10px;margin:12px 0}
+.step{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12.5px}
+.sheet ul{margin:4px 0;padding-left:18px} .sheet li{margin:2px 0}
+.cmp{overflow:auto;max-height:calc(100vh - 250px);margin-top:10px;border:1px solid var(--line);border-radius:8px}
+.cmp table{font-size:13px;min-width:1100px}
+.cmp th,.cmp td{padding:6px 9px;white-space:nowrap}
+.cmp thead th{position:sticky;top:0;background:var(--panel);cursor:pointer;user-select:none;white-space:normal;vertical-align:bottom;min-width:96px;z-index:1}
+.cmp thead th[aria-sort]::after{content:' ↓';color:var(--accent)} .cmp thead th[aria-sort="ascending"]::after{content:' ↑'}
+.cmp tbody tr{cursor:pointer} .cmp tbody tr:hover td{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.cmp tr.bench td{font-weight:600;background:color-mix(in srgb,var(--ink) 6%,var(--panel));cursor:default}
+.cmp tr.cand td:first-child{color:var(--cand);font-weight:600}
+.m{font-size:10.5px;color:var(--muted);margin-left:3px}
+@media print{ header,.zoom,#tip,#placehint,#help,#compare,#legend .hidep,.sig,.noprint,aside>section:not(#card),aside>details{display:none!important}
+  body{display:block;height:auto} main{display:block} #mapwrap{height:52vh;break-inside:avoid;border:1px solid #ccc}
+  aside{width:100%;border:0;overflow:visible;padding:10px 0} .kpis{grid-template-columns:repeat(3,1fr)} details>summary::after{content:''} }
 @media (max-width:820px){ main{flex-direction:column} #mapwrap{min-height:56vh} aside{width:100%;border-left:0;border-top:1px solid var(--line)} }
 </style>
 </head>
@@ -83,6 +127,8 @@ select,input[type=number],input[type=search]{font:inherit;padding:4px 6px;border
   <h1>Геоаналітика SPAR</h1>
   <label class="sub" for="go" style="display:flex;align-items:center;gap:6px">Знайти населений пункт <input id="go" type="search" list="placelist" placeholder="Мукачево, Солочин…" autocomplete="off" style="width:190px"><datalist id="placelist"></datalist></label>
   <span class="asof" id="asof">Завантаження…</span>
+  <button class="btn primary" id="cmpbtn" type="button" hidden>Порівняти всі точки</button>
+  <button class="btn" id="helpbtn" type="button">Як користуватися</button>
   <button class="btn" id="reload" type="button" hidden>Оновити з таблиці</button>
   <a class="btn" id="sheetlink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">Відкрити таблицю</a>
 </header>
@@ -91,24 +137,34 @@ select,input[type=number],input[type=search]{font:inherit;padding:4px 6px;border
     <canvas id="map" aria-label="Карта з магазинами, конкурентами та зонами пішої доступності"></canvas>
     <div id="loading">Завантажую карту…</div>
     <div id="tileload" class="attr" style="left:auto;right:56px;top:12px;bottom:auto;display:none">Підвантажую ділянку…</div>
-    <div id="gate" hidden><div class="gatebox"><h2>Геоаналітика SPAR</h2><p class="sub">Карта Закарпатської та Івано-Франківської областей відкрита. Ваші магазини, площі, чеки й кандидати підвантажуються з Google Таблиці лише після входу під акаунтом, якому відкрито доступ.</p><button class="btn primary" id="signin" type="button">Увійти через Google</button><p class="sub" id="gatemsg"></p></div></div>
+    <div id="gate" hidden><div class="gatebox"><h2>Геоаналітика SPAR</h2><p>Карта для оцінки місць під магазини: конкуренти поруч, забудова в пішій доступності, прогноз чеків і порівняння всіх точок мережі.</p><p class="sub">Ваші магазини, чеки й кандидати підвантажуються з Google Таблиці після входу під акаунтом, якому відкрито доступ.</p><button class="btn primary" id="signin" type="button">Увійти через Google</button><p class="sub" id="gatemsg"></p></div></div>
     <div id="placehint">Клацніть на карті, щоб поставити точку-кандидата · Esc — скасувати</div>
     <div class="zoom"><button id="zin" type="button" aria-label="Наблизити">+</button><button id="zout" type="button" aria-label="Віддалити">−</button><button id="zfit" type="button" aria-label="Показати обрану точку" title="До обраної точки">◎</button></div>
     <div id="tip"></div>
     <div class="attr">© OpenStreetMap contributors</div>
+    <div id="legend" hidden></div>
   </div>
+  <div id="help" hidden role="dialog" aria-modal="true" aria-labelledby="helpttl"><div class="sheet" id="helpbody"></div></div>
+  <div id="compare" hidden role="dialog" aria-modal="true" aria-labelledby="cmpttl"><div class="sheet" id="cmpbody"></div></div>
   <aside>
-    <section>
-      <h3>Магазини і кандидати</h3>
-      <div class="tabs" id="tabs"></div>
-      <div class="row" style="margin-top:8px">
-        <button class="btn" id="place" type="button" aria-pressed="false">+ Точка на карті</button>
-        <span class="sub">швидка перевірка «що, якщо», у таблицю не записується</span>
-      </div>
-    </section>
+    <div class="tabs" id="tabs" hidden></div>
+    <button class="btn" id="place" type="button" aria-pressed="false" hidden>+ Точка на карті</button>
     <section id="card"></section>
-    <section>
-      <h3>Модель Хаффа · параметри</h3>
+    <details id="dlayers">
+      <summary>Що показати на карті</summary>
+      <div class="layers" id="layers"></div>
+      <label class="sub" for="hexmode" style="display:block;margin-top:10px">Заливка навколо обраної точки</label>
+      <select id="hexmode">
+        <option value="huff">Звідки прийдуть покупці (модель)</option>
+        <option value="walk">Скільки йти пішки до точки</option>
+        <option value="bld">Щільність забудови</option>
+        <option value="off">Без заливки</option>
+      </select>
+      <div class="legend" id="hexlegend" style="margin-top:8px"></div>
+    </details>
+    <details>
+      <summary>Налаштування моделі · для аналітика</summary>
+      <div class="sub">Модель Хаффа ділить покупців кожного кварталу між магазинами: більший магазин притягує сильніше, далекий слабше. Повзунки змінюють, наскільки сильно.</div>
       <div class="sliders">
         <label for="beta">Чутливість до відстані β = <output id="betav">2,0</output></label>
         <input type="range" id="beta" min="1" max="3" step="0.1" value="2">
@@ -116,22 +172,11 @@ select,input[type=number],input[type=search]{font:inherit;padding:4px 6px;border
         <input type="range" id="alpha" min="0.5" max="1.5" step="0.1" value="1">
       </div>
       <div id="calib"></div>
-    </section>
-    <section>
-      <h3>Шари</h3>
-      <div class="layers" id="layers"></div>
-    </section>
-    <section>
-      <h3>Шестикутники ≈0,015 км²</h3>
-      <select id="hexmode" aria-label="Що показують шестикутники">
-        <option value="huff">Частка обраної точки за Хаффом</option>
-        <option value="walk">Пішки до обраної точки</option>
-        <option value="bld">Кількість будинків (OSM)</option>
-        <option value="off">Не показувати</option>
-      </select>
-      <div class="legend" id="hexlegend" style="margin-top:8px"></div>
-    </section>
-    <section class="src" id="src"></section>
+    </details>
+    <details>
+      <summary>Джерела й метод</summary>
+      <div class="src" id="src"></div>
+    </details>
   </aside>
 </main>
 <script>
@@ -236,7 +281,7 @@ function buildFacs(){ facs=[];
   S.cands.forEach(c=>{ if(c.lat==null||c.lon==null||!inBox(+c.lat,+c.lon))return;
     facs.push({kind:'cand',name:c.name,addr:c.addr,area:+c.area||null,areaFromSheet:!!+c.area,note:c.note,facts:c.facts,assess:c.assess,csrc:c.csrc||'координати з таблиці',q:toQ(+c.lat,+c.lon)}) });
   temp.forEach(t=>{ if(qIn(t.q)){t.D=null;t._iso=null;facs.push(t)} });
-  const med=medianOwnArea();
+  const med=medianOwnArea()||medianSheetArea();
   facs.forEach(f=>{ if(!f.area){f.area=med; f.areaNote=med?'площа не вказана, взято медіану ваших магазинів':'площа не вказана'} });
   B.pois.forEach((p,i)=>{ if(p.c!=='grocery')return; const cls=classify(p); p.cls=cls;
     if(cls==='Власна мережа'||cls==='Не конкурент')return;
@@ -248,7 +293,7 @@ function buildFacs(){ facs=[];
   facs.forEach(f=>{ if(f.kind==='comp'){ f.D=dijkstra(f.g,RMAX+300) } else prep(f) });
   cache={} }
 function addTemp(q){const n=temp.length+1, med=medianOwnArea()||medianSheetArea(); const f={kind:'cand',temp:true,name:'Точка '+n,addr:'поставлена на карті',area:med,areaFromSheet:false,areaNote:med?'площа за замовчуванням — медіана ваших магазинів, змініть нижче':'площа не вказана, введіть нижче',csrc:'клік на карті',q};
-  prep(f); temp.push(f); facs.push(f); cache={}; select(facs.indexOf(f))}
+  prep(f); temp.push(f); facs.push(f); cache={}; CMP=null; BENCH=null; select(facs.indexOf(f))}
 
 // ---------- Huff
 function params(){return [+document.getElementById('alpha').value,+document.getElementById('beta').value]}
@@ -327,7 +372,7 @@ function hexColor(h,i,P){const m=document.getElementById('hexmode').value, f=fac
   const w=walk(f,h[6],h[7]); if(w==null||w>1600)return null; return w<=400?col.hex5:w<=800?col.hex4:w<=1200?col.hex3:col.hex2}
 const cv=document.getElementById('map'), ctx=cv.getContext('2d'), tip=document.getElementById('tip');
 function detail(){return view.s>=DETAIL_S}
-function render(){ need=false; if(!REG||!W)return; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=col.land; ctx.fillRect(0,0,W,H);
+function render(){ need=false; if(!REG||!W||busy)return; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=col.land; ctx.fillRect(0,0,W,H);
   const s=view.s, det=detail()&&!!B;
   if(lastDet!==detail()){lastDet=detail(); hexLegend()}
   drawOverview(det);
@@ -414,7 +459,7 @@ function hover(x,y){ if(!REG)return; let best=null,bd=11;
     :'<b>'+(f.kind==='own'?'SPAR «'+esc(f.name)+'»':'Кандидат «'+esc(f.name)+'»')+'</b><span>'+esc(f.addr)+'</span>'}
   else {const p=best.p; tip.innerHTML='<b>'+esc(p.n||'(без назви в OSM)')+'</b><span>'+esc(TYPE[p.v]||p.v)+'<br>OSM '+esc(p.id)+(p.ts?' · змінено '+esc(p.ts):'')+'</span>'}
   tip.style.display='block'; tip.style.left=Math.min(x+14,W-280)+'px'; tip.style.top=Math.max(8,y-10)+'px'}
-function setPlacing(v){placing=v; document.getElementById('place').setAttribute('aria-pressed',v); document.getElementById('placehint').style.display=v?'block':'none'; cv.classList.toggle('place',v)}
+function setPlacing(v){placing=v; const an=document.getElementById('a-new'); if(an)an.setAttribute('aria-pressed',v); document.getElementById('place').setAttribute('aria-pressed',v); document.getElementById('placehint').style.display=v?'block':'none'; cv.classList.toggle('place',v)}
 document.getElementById('place').onclick=()=>setPlacing(!placing);
 addEventListener('keydown',e=>{if(e.key==='Escape')setPlacing(false)});
 document.getElementById('zin').onclick=()=>zoomAt(W/2,H/2,1.5);
@@ -441,7 +486,7 @@ async function loadTile(i,j){ const key=i+'_'+j; if(key===tileKey)return; if(!TI
   if(loadingTile===key){ while(loadingTile===key)await new Promise(r=>setTimeout(r,80)); return }
   loadingTile=key; const el=document.getElementById('tileload'); el.style.display='';
   const keep=sel>=0&&facs[sel]?{kind:facs[sel].kind,name:facs[sel].name}:null;
-  try{ const b=await (await fetch('data/t/'+key+'.json',{cache:'no-cache'})).json(); if(loadingTile!==key)return;
+  try{ const b=await getTile(key); if(loadingTile!==key)return;
     B=b; tileKey=key; KXq=B.meta.kxq||KXq; KYq=B.meta.kyq||KYq; buildGraph(); cache={}; calibNote='';
     if(S){ buildFacs(); sel=keep?facs.findIndex(f=>f.kind===keep.kind&&f.name===keep.name):-1; tabs(); layersBox(); srcBox(); card() } draw() }
   catch(e){ alert0('Не вдалося підвантажити ділянку карти: '+(e.message||e)) }
@@ -455,27 +500,84 @@ function inZone(f,lim){const res={cls:{},cat:{},b:{all:0,apt:0,house:0,yes:0}};
   B.hex.forEach(h=>{const d=walk(f,h[6],h[7]); if(d==null||d>lim)return; res.b.all+=h[1];res.b.apt+=h[2];res.b.house+=h[3];res.b.yes+=h[4]});
   return res}
 function nearest(f,cls){let best=null; facs.forEach(c=>{ if(c.kind!=='comp'||c.cls!==cls)return; const d=distQ(f.q,c.q); if(!best||d<best.d)best={d,c} }); if(!best)return null; return {n:best.c.name,d:best.d,w:walk(f,best.c.g,best.c.o)}}
-function card(){ if(sel<0){const miss=S.stores.filter(s=>s.lat==null||s.lon==null).map(s=>s.name);
-    document.getElementById('card').innerHTML='<h2>Обидві області</h2><div class="note" style="margin-top:8px">Оберіть магазин або кандидата у списку вище, знайдіть населений пункт угорі чи просто наблизьте карту: деталі ділянки (вулиці, зони пішки, модель Хаффа) підвантажаться самі. Нову точку ставить кнопка «+ Точка на карті».'+(miss.length?'<br><br>Без координат у вкладці «Магазини» зараз: '+miss.map(esc).join(', ')+'.':'')+'</div>';
-    calibBox(); draw(); return}
-  const f=facs[sel], z4=inZone(f,400), z8=inZone(f,800), g=(o,k)=>o[k]||0;
+// ---------- показники точки: одні й ті самі для картки й таблиці порівняння
+const GEN=[['stop','зупинки'],['edu','школи, садки, виші'],['med','лікарні, клініки'],['mall','ТЦ'],['market','ринки']];
+function forecastFor(j){ const keep=sel; sel=j; cache={}; const base=scenario(false), wit=scenario(true), R=ratios(base); let out={n:R.length};
+  if(R.length>=3){ const rs=R.map(r=>r.ratio).sort((a,b)=>a-b), cap=captured(wit,j);
+    out.med=Math.round(cap*rs[rs.length>>1]/10)*10; out.lo=cap*rs[0]; out.hi=cap*rs[rs.length-1];
+    out.can=facs.map((o,k)=>[o,k]).filter(([o])=>o.kind==='own').map(([o,k])=>{const b0=captured(base,k),b1=captured(wit,k); const r=R.find(x=>x.j===k); return {o,loss:b0>0?(b0-b1)/b0:0,ch:r?(b0-b1)*r.ratio:null}}).filter(x=>x.loss>0.005).sort((a,b)=>b.loss-a.loss) }
+  sel=keep; cache={}; return out}
+function metricsFor(j){ const keep=sel; sel=j; cache={}; const f=facs[j], z4=inZone(f,400), z8=inZone(f,800), g=(o,k)=>o[k]||0;
+  const P=f.kind==='cand'?scenario(true):scenario(false), h8=zoneStats(P,j,800), nd=nearest(f,'Прямі');
+  const m={kind:f.kind,temp:!!f.temp,name:f.name,addr:f.addr,area:f.area,areaFromSheet:f.areaFromSheet,
+    bld10:z8.b.all, apt10:z8.b.apt, comp5:CLASSES.reduce((s,c)=>s+g(z4.cls,c),0), comp10:CLASSES.reduce((s,c)=>s+g(z8.cls,c),0), direct10:g(z8.cls,'Прямі'),
+    nearDirect:nd?(nd.w!=null?nd.w:null):null, nearDirectName:nd?nd.n:null, gen10:GEN.reduce((s,[k])=>s+g(z8.cat,k),0), stops10:g(z8.cat,'stop'), share10:h8.share, checks:null, checksSrc:null};
+  if(f.kind==='own'){const c=avgChecks(f.name); if(c){m.checks=c.avg; m.checksSrc='факт'}}
+  else {const fc=forecastFor(j); if(fc.med!=null){m.checks=fc.med; m.checksSrc='прогноз'; m.cannib=fc.can.reduce((s,x)=>s+(x.ch||0),0)}}
+  sel=keep; cache={}; return m}
+function placeOf(q){ let best=null,bd=1e18; REG.places.forEach(p=>{ if(p[1]==='hamlet')return; const d=Math.hypot((p[2]-q[0])*DXq,(p[3]-q[1])*DYq)*(p[1]==='city'?.5:p[1]==='town'?.7:1); if(d<bd){bd=d;best=p} }); return best&&bd<8000?best[0]:'—'}
+function cityOf(r){ if(r.kind==='own'){const s=S.stores.find(x=>x.name===r.name); if(s&&s.city)return s.city} return placeOf(r.q)}
+
+// ---------- стартовий екран
+let homeOpen='';
+function home(){ const L=regionList(), own=L.filter(r=>r.kind==='own'), cands=L.filter(r=>r.kind==='cand'), miss=S.stores.filter(s=>s.lat==null||s.lon==null).map(s=>s.name);
+  const by={}; own.forEach(r=>{const c=cityOf(r); (by[c]=by[c]||[]).push(r)});
+  const btns=list=>'<div class="tabs">'+list.map(r=>'<button type="button" class="'+(r.kind==='cand'?'cand':'')+'" data-k="'+L.indexOf(r)+'">'+esc(r.name)+'</button>').join('')+'</div>';
+  let h='<h2>З чого почати</h2><div class="sub">Оберіть, що потрібно зробити. Деталі по точці відкриються праворуч, а зони пішої доступності з\'являться на карті.</div><div class="home-actions">'+
+   '<button class="action" type="button" id="a-new" aria-pressed="'+placing+'"><span class="n">1</span><b>Оцінити нову адресу</b><span class="sub">Клацніть на карті, де може бути магазин: побачите конкурентів, забудову, прогноз чеків і скільки точка забере у ваших магазинів.</span></button>'+
+   '<button class="action" type="button" id="a-own" aria-pressed="'+(homeOpen==='own')+'"><span class="n">2</span><b>Подивитися свій магазин</b><span class="sub">Хто конкурує поруч, скільки людей у пішій доступності, чеки з таблиці.</span></button>'+
+   '<button class="action" type="button" id="a-cmp"><span class="n">3</span><b>Порівняти всі точки</b><span class="sub">Одна таблиця: ваші магазини й кандидати за однаковими показниками, з медіаною мережі.</span></button></div>';
+  if(homeOpen==='own')h+='<h3>Ваші магазини</h3>'+Object.keys(by).sort((a,b)=>a.localeCompare(b,'uk')).map(c=>'<div class="city">'+esc(c)+'</div>'+btns(by[c])).join('');
+  if(cands.length)h+='<h3 style="margin-top:14px">Кандидати на відкриття</h3>'+btns(cands)+'<div class="sub" style="margin-top:6px">Пунктирні — з вкладки «Кандидати» таблиці або поставлені на карті.</div>';
+  if(miss.length)h+='<div class="note" style="margin-top:14px">Немає на карті, бо у вкладці «Магазини» немає координат: '+miss.map(esc).join(', ')+'.</div>';
+  document.getElementById('card').innerHTML=h;
+  document.getElementById('a-new').onclick=()=>{ setPlacing(!placing); home() };
+  document.getElementById('a-own').onclick=()=>{ homeOpen=homeOpen==='own'?'':'own'; home() };
+  document.getElementById('a-cmp').onclick=openCompare;
+  document.querySelectorAll('#card .tabs button').forEach(b=>b.onclick=()=>focusFac(L[+b.dataset.k]))}
+function goHome(){ sel=-1; homeOpen=''; card(); fitRegionKeep() }
+function fitRegionKeep(){ draw() }
+
+// ---------- картка точки
+const kpi=(v,lbl,tag,bm)=>'<div class="kpi"><div class="tag">'+tag+'</div><div class="big">'+v+'</div><div class="lbl">'+lbl+'</div>'+(bm?'<div class="bm">'+bm+'</div>':'')+'</div>';
+function benchTxt(k,unit){ if(!BENCH||BENCH[k]==null)return ''; return 'медіана ваших магазинів: '+(k==='share10'?pct(BENCH[k]):fmt(BENCH[k])+(unit||'')) }
+function card(){ if(!S)return; if(sel<0){home(); calibBox(); draw(); return}
+  const f=facs[sel], z4=inZone(f,400), z8=inZone(f,800), g=(o,k)=>o[k]||0, m=metricsFor(sel);
   const P=f.kind==='cand'?scenario(true):scenario(false), h4=zoneStats(P,sel,400), h8=zoneStats(P,sel,800);
-  let html='<h2>'+(f.kind==='own'?'SPAR «'+esc(f.name)+'»':'Кандидат «'+esc(f.name)+'»')+'</h2><div class="sub">'+esc(f.addr)+' · площа '+(f.areaFromSheet?fmt(f.area)+' м²':f.area?'≈'+fmt(f.area)+' м² ('+esc(f.areaNote)+')':'не вказана')+(f.format?' · '+esc(f.format):'')+(f.opened?' · відкрито '+esc(f.opened):'')+'</div><div class="sub" style="margin:2px 0 10px">Координати: '+esc(f.csrc)+'</div>';
+  const kind=f.kind==='own'?'<span class="badge">ваш магазин</span>':f.temp?'<span class="badge cand">точка на карті</span>':'<span class="badge cand">кандидат</span>';
+  let html='<button class="back noprint" type="button" id="back">← До всіх точок</button><h2>'+(f.kind==='own'?'SPAR «'+esc(f.name)+'»':esc(f.name))+kind+'</h2><div class="sub">'+esc(f.addr)+' · площа '+(f.areaFromSheet?fmt(f.area)+' м²':f.area?'≈'+fmt(f.area)+' м² ('+esc(f.areaNote)+')':'не вказана')+(f.format?' · '+esc(f.format):'')+(f.opened?' · відкрито '+esc(f.opened):'')+'</div>';
+  html+='<div class="row noprint" style="margin:10px 0 12px"><button class="btn" id="tocmp" type="button">Порівняти з іншими точками</button><button class="btn" id="print" type="button">Друк / PDF</button></div>';
+  if(f.temp)html+='<div class="row" style="margin-bottom:10px"><label for="tarea" class="sub">Площа майбутнього магазину, м²</label><input type="number" id="tarea" min="20" step="10" value="'+(f.area||'')+'" style="width:90px"><button class="btn" id="tdel" type="button">Прибрати точку</button></div>';
   if(f.facts){const L=f.facts.split('|').map(x=>x.trim()).filter(Boolean); html+='<div class="facts"><h3>Що відомо про точку</h3><ul>'+L.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+(f.note?'<div class="sub">'+esc(f.note)+'</div>':'')+'</div>'}
   if(f.assess){const L=f.assess.split('|').map(x=>x.trim()).filter(Boolean); html+='<div class="facts assess"><h3>Оцінка точки · робоча, не рішення</h3><ul>'+L.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>'}
-  if(f.temp)html+='<div class="row" style="margin-bottom:10px"><label for="tarea" class="sub">Площа, м²</label><input type="number" id="tarea" min="20" step="10" value="'+(f.area||'')+'" style="width:90px"><button class="btn" id="tdel" type="button">Прибрати точку</button></div>';
-  html+='<h3>Модель Хаффа · розрахунок</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+row('Частка точки в попиті зони',pct(h4.share),pct(h8.share))+'</tbody></table>';
-  html+='<div class="sub" style="margin:6px 0 4px">Хто забирає решту в зоні 800 м:</div><table><tbody>'+h8.take.slice(0,5).map(t=>{const c=facs[t[0]]; return '<tr><td>'+dot(c.kind==='own'?'own':c.kind==='cand'?'cand':CK[c.cls])+esc(c.kind==='own'?'SPAR «'+c.name+'»':c.name)+' <span class="sub">≈'+fmt(c.area)+' м²</span></td><td>'+pct(t[1])+'</td></tr>'}).join('')+'</tbody></table>';
-  html+=checksBlock(f); html+=f.kind==='own'?profileBlock(f):twinsBlock(f);
-  html+='<h3 style="margin-top:14px">Забудова в зоні пішки</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+row('Будинків в OSM',fmt(z4.b.all),fmt(z8.b.all))+row('з них багатоквартирних',z4.b.apt,z8.b.apt)+row('з них приватних',z4.b.house,z8.b.house)+row('тип не вказано',z4.b.yes,z8.b.yes)+'<tr><td>Жителів</td><td class="na" colspan="2">Немає даних</td></tr></tbody></table><div class="sub">Будинки пораховано по шестикутниках, центр яких у зоні.</div>';
-  html+='<h3 style="margin-top:14px">Конкуренти в зоні</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+CLASSES.map(c=>row(dot(CK[c])+c,g(z4.cls,c),g(z8.cls,c))).join('')+row(dot('spec')+'Спеціалізовані продуктові',g(z4.cat,'foodspec'),g(z8.cat,'foodspec'))+row(dot('spec')+'Непродовольчі',g(z4.cat,'nonfood'),g(z8.cat,'nonfood'))+'</tbody></table>';
-  html+='<h3 style="margin-top:14px">Найближчий конкурент</h3><table><thead><tr><th></th><th>по прямій</th><th>пішки</th></tr></thead><tbody>'+CLASSES.map(c=>{const n=nearest(f,c); return n?'<tr><td>'+dot(CK[c])+c+'<br><span class="sub">'+esc(n.n)+'</span></td><td>'+mtxt(n.d)+'</td><td>'+mtxt(n.w)+'</td></tr>':'<tr><td>'+dot(CK[c])+c+'</td><td class="na" colspan="2">Немає в OSM</td></tr>'}).join('')+'</tbody></table>';
-  html+='<h3 style="margin-top:14px">Що генерує потік</h3><table><thead><tr><th></th><th>400 м</th><th>800 м</th></tr></thead><tbody>'+[['stop','Зупинки'],['parking','Паркінги'],['food','Кафе, ресторани, бари'],['bank','Банки й банкомати'],['pharm','Аптеки'],['mall','Торгові центри'],['market','Ринки'],['edu','Школи, садки, виші'],['med','Лікарні й клініки'],['hotel','Готелі']].map(([k,l])=>row(l,g(z4.cat,k),g(z8.cat,k))).join('')+'</tbody></table>';
+  // коротко
+  const fc=f.kind==='cand'?forecastFor(sel):null;
+  const chk=f.kind==='own'?(m.checks!=null?kpi(fmt(m.checks),'чеків на місяць, середнє','ваша таблиця · факт',benchTxt('checks')):kpi('—','чеків на місяць: немає у вкладці «Чеки»','ваша таблиця','')):
+    (fc.med!=null?kpi(fmt(fc.med),'чеків на місяць, прогноз (діапазон '+fmt(fc.lo)+'–'+fmt(fc.hi)+')','модель · оцінка',benchTxt('checks')):kpi('—','прогноз чеків: потрібні чеки ≥3 ваших магазинів поруч (зараз '+fc.n+')','модель',''));
+  html+='<h3>Коротко</h3><div class="kpis">'+
+    kpi(fmt(m.bld10),'будинків за 10 хв пішки','OpenStreetMap',benchTxt('bld10'))+
+    kpi(fmt(m.comp10)+' <span class="sub">(прямих '+m.direct10+')</span>','продуктових конкурентів за 10 хв','OpenStreetMap + таблиця',benchTxt('comp10'))+
+    kpi(m.nearDirect!=null?fmt(m.nearDirect)+' м':m.nearDirectName?'далі 1,8 км':'—','до найближчого прямого конкурента пішки'+(m.nearDirectName?' · '+esc(m.nearDirectName):''),'OpenStreetMap',benchTxt('nearDirect',' м'))+
+    kpi(pct(m.share10),'покупців 10-хв зони, які оберуть точку','модель · оцінка',benchTxt('share10'))+
+    chk+
+    kpi(fmt(m.gen10),'зупинок, шкіл, лікарень, ТЦ, ринків за 10 хв','OpenStreetMap',benchTxt('gen10'))+'</div>';
+  html+='<div class="sub" style="margin-top:6px">10 хв пішки ≈ 800 м вулицями, 5 хв ≈ 400 м. '+(BENCH?'Медіана — серед ваших магазинів з координатами.':'<a href="#" id="mkbench">Порахувати медіану ваших магазинів для порівняння</a>')+'</div>';
+  if(fc&&fc.can){html+='<h3 style="margin-top:14px">Що забере у ваших магазинів</h3>'+(fc.can.length?'<table><thead><tr><th></th><th>покупців</th><th>чеків/міс.</th></tr></thead><tbody>'+fc.can.map(x=>row('SPAR «'+esc(x.o.name)+'»','−'+pct(x.loss),x.ch==null?na:'−'+fmt(x.ch))).join('')+'</tbody></table>':'<div class="sub">Помітного перетоку з ваших магазинів модель не бачить.</div>')}
+  html+='<details open><summary>Конкуренти поруч</summary><table><thead><tr><th></th><th>5 хв</th><th>10 хв</th></tr></thead><tbody>'+CLASSES.map(c=>row(dot(CK[c])+c,g(z4.cls,c),g(z8.cls,c))).join('')+row(dot('spec')+'Спеціалізовані продуктові',g(z4.cat,'foodspec'),g(z8.cat,'foodspec'))+row(dot('spec')+'Непродовольчі',g(z4.cat,'nonfood'),g(z8.cat,'nonfood'))+'</tbody></table>';
+  html+='<div class="sub" style="margin:10px 0 4px">Найближчий у кожному класі:</div><table><thead><tr><th></th><th>по прямій</th><th>пішки</th></tr></thead><tbody>'+CLASSES.map(c=>{const n=nearest(f,c); return n?'<tr><td>'+dot(CK[c])+c+'<br><span class="sub">'+esc(n.n)+'</span></td><td>'+mtxt(n.d)+'</td><td>'+mtxt(n.w)+'</td></tr>':'<tr><td>'+dot(CK[c])+c+'</td><td class="na" colspan="2">Немає в даних</td></tr>'}).join('')+'</tbody></table></details>';
+  html+='<details><summary>Хто ділить покупців зони</summary><div class="sub">Як модель ділить покупців 10-хвилинної зони між магазинами.</div><table><thead><tr><th></th><th>5 хв</th><th>10 хв</th></tr></thead><tbody>'+row('Ця точка',pct(h4.share),pct(h8.share))+'</tbody></table><table style="margin-top:6px"><tbody>'+h8.take.slice(0,6).map(t=>{const c=facs[t[0]]; return '<tr><td>'+dot(c.kind==='own'?'own':c.kind==='cand'?'cand':CK[c.cls])+esc(c.kind==='own'?'SPAR «'+c.name+'»':c.name)+' <span class="sub">≈'+fmt(c.area)+' м²</span></td><td>'+pct(t[1])+'</td></tr>'}).join('')+'</tbody></table></details>';
+  html+='<details><summary>Що приводить людей</summary><table><thead><tr><th></th><th>5 хв</th><th>10 хв</th></tr></thead><tbody>'+[['stop','Зупинки'],['parking','Паркінги'],['edu','Школи, садки, виші'],['med','Лікарні й клініки'],['mall','Торгові центри'],['market','Ринки'],['food','Кафе, ресторани, бари'],['bank','Банки й банкомати'],['pharm','Аптеки'],['hotel','Готелі']].map(([k,l])=>row(l,g(z4.cat,k),g(z8.cat,k))).join('')+'</tbody></table></details>';
+  html+='<details><summary>Забудова</summary><table><thead><tr><th></th><th>5 хв</th><th>10 хв</th></tr></thead><tbody>'+row('Будинків',fmt(z4.b.all),fmt(z8.b.all))+row('з них багатоквартирних',z4.b.apt,z8.b.apt)+row('з них приватних',z4.b.house,z8.b.house)+row('тип не вказано',z4.b.yes,z8.b.yes)+'<tr><td>Жителів</td><td class="na" colspan="2">Немає даних</td></tr></tbody></table><div class="sub">З OpenStreetMap. Перевіреного відкритого джерела кількості жителів по кварталах немає.</div></details>';
+  const cb=f.kind==='own'?checksBlock(f)+profileBlock(f):twinsBlock(f); if(cb)html+='<details'+(f.kind==='own'?' open':'')+'><summary>'+(f.kind==='own'?'Чеки й профіль доби':'Профілі ваших магазинів поруч')+'</summary>'+cb+'</details>';
   const own=facs.map((o,j)=>[o,j]).filter(([o,j])=>o.kind==='own'&&j!==sel).map(([o,j])=>({o,j,d:distQ(f.q,o.q),w:walk(f,o.g,o.o)})).sort((a,b)=>a.d-b.d)[0];
-  if(own)html+='<h3 style="margin-top:14px">Ваша мережа</h3><div>Найближчий магазин: «'+esc(own.o.name)+'», '+mtxt(own.d)+' по прямій, '+(own.w==null?'пішки понад '+fmt((RMAX+300)/1000,1)+' км':mtxt(own.w)+' пішки')+'.</div>';
+  if(own)html+='<div class="sub" style="margin-top:12px">Найближчий ваш магазин: «'+esc(own.o.name)+'», '+mtxt(own.d)+' по прямій, '+(own.w==null?'пішки понад '+fmt((RMAX+300)/1000,1)+' км':mtxt(own.w)+' пішки')+'.</div>';
   document.getElementById('card').innerHTML=html;
+  document.getElementById('back').onclick=goHome;
+  document.getElementById('tocmp').onclick=openCompare;
+  document.getElementById('print').onclick=()=>window.print();
+  const mb=document.getElementById('mkbench'); if(mb)mb.onclick=e=>{e.preventDefault(); openCompare()};
   if(f.temp){document.getElementById('tarea').onchange=e=>{f.area=+e.target.value||f.area; f.areaNote='введено вручну'; f.areaFromSheet=false; cache={}; card(); draw()};
-    document.getElementById('tdel').onclick=()=>{const j=facs.indexOf(f); temp=temp.filter(t=>t!==f); facs.splice(j,1); cache={}; sel=facs.findIndex(x=>x.kind!=='comp'); tabs(); if(sel>=0)select(sel); else card()}}
+    document.getElementById('tdel').onclick=()=>{const j=facs.indexOf(f); temp=temp.filter(t=>t!==f); facs.splice(j,1); cache={}; goHome()}}
   calibBox(); draw()}
 function profile(name){ if(!S.hours)return null; const rows=S.hours.filter(h=>h.store===String(name).trim()); if(!rows.length)return null;
   const m=rows.map(h=>h.month).sort().pop(), R=rows.filter(h=>h.month===m), by=Array(24).fill(0), dw=Array(8).fill(0); let all=0,rev=0,morn=0,eve=0,night=0;
@@ -502,21 +604,9 @@ function profileBlock(f){ const p=profile(f.name);
    '<div class="sub" style="margin-top:4px">Робоча мітка: <b>'+p.type+'</b>. Пораховано з вкладки «Години» вашої таблиці; мітка — правило за частками доби, не висновок.</div>'}
 function twinsBlock(f){ if(!S.hours)return ''; const L=facs.filter(o=>o.kind==='own').map(o=>[o.name,profile(o.name)]).filter(x=>x[1]);
   if(!L.length)return ''; return '<h3 style="margin-top:14px">Профілі ваших магазинів на ділянці</h3><div class="sub" style="margin-bottom:4px">Щоб обрати, з якими магазинами порівнювати цю точку.</div><table><tbody>'+L.map(([n,p])=>'<tr><td>'+esc(n)+'</td><td>'+p.type+'</td></tr>').join('')+'</tbody></table>'}
-function checksBlock(f){
-  if(f.kind==='own'){const c=avgChecks(f.name);
-    if(!c)return '<h3 style="margin-top:14px">Чеки</h3><div class="sub">У вкладці «Чеки» немає даних для «'+esc(f.name)+'».</div>';
-    const P=scenario(false), cap=captured(P,sel);
-    return '<h3 style="margin-top:14px">Чеки · ваша таблиця</h3><table><tbody>'+row('Середньо чеків на місяць',fmt(c.avg))+(c.rev?row('Середній виторг на місяць, грн',fmt(c.rev)):'')+row('Середній чек, грн',c.rev?fmt(c.rev/c.avg):na)+row('Період',esc(c.from)+' — '+esc(c.to)+' ('+c.n+' міс.)')+'</tbody></table>'}
-  // candidate: forecast and cannibalisation
-  const base=scenario(false), wit=scenario(true), R=ratios(base);
-  let h='<h3 style="margin-top:14px">Прогноз · розрахунок моделі</h3>';
-  if(R.length<3) return h+'<div class="sub">Прогноз чеків з\'явиться, коли у вкладці «Чеки» будуть дані щонайменше трьох ваших магазинів на цій ділянці карти (зараз '+R.length+').</div>';
-  const rs=R.map(r=>r.ratio).sort((a,b)=>a-b), med=rs[rs.length>>1], cap=captured(wit,sel);
-  h+='<div class="kpis"><div class="kpi"><div class="big">'+fmt(Math.round(cap*med/10)*10)+'</div><div class="sub">чеків на місяць, медіана</div></div><div class="kpi"><div class="big">'+fmt(cap*rs[0])+'–'+fmt(cap*rs[rs.length-1])+'</div><div class="sub">діапазон за вашими '+R.length+' магазинами</div></div></div>';
-  h+='<div class="sub" style="margin-top:6px">Захоплений попит точки × відношення «чеки / захоплений попит» ваших магазинів. Транзит, туристів і формат модель не бачить.</div>';
-  const can=facs.map((o,j)=>[o,j]).filter(([o])=>o.kind==='own').map(([o,j])=>{const b0=captured(base,j),b1=captured(wit,j); const r=R.find(x=>x.j===j); return {o,loss:b0>0?(b0-b1)/b0:0,ch:r?(b0-b1)*r.ratio:null}}).filter(x=>x.loss>0.005).sort((a,b)=>b.loss-a.loss);
-  h+='<h3 style="margin-top:14px">Що забере у ваших магазинів</h3>'+(can.length?'<table><thead><tr><th></th><th>попиту</th><th>чеків/міс.</th></tr></thead><tbody>'+can.map(x=>row('SPAR «'+esc(x.o.name)+'»','−'+pct(x.loss),x.ch==null?na:'−'+fmt(x.ch))).join('')+'</tbody></table>':'<div class="sub">Помітного перетоку з ваших магазинів модель не бачить.</div>');
-  return h}
+function checksBlock(f){ const c=avgChecks(f.name);
+  if(!c)return '<div class="sub">У вкладці «Чеки» немає даних для «'+esc(f.name)+'».</div>';
+  return '<table><tbody>'+row('Середньо чеків на місяць',fmt(c.avg))+(c.rev?row('Середній виторг на місяць, грн',fmt(c.rev)):'')+row('Середній чек, грн',c.rev?fmt(c.rev/c.avg):na)+row('Період',esc(c.from)+' — '+esc(c.to)+' ('+c.n+' міс.)')+'</tbody></table>'}
 function hexLegend(){const v=document.getElementById('hexmode').value, sw=(c,t)=>'<span><span class="sw" style="background:var(--'+c+')"></span>'+t+'</span>';
   if(REG&&!detail()){document.getElementById('hexlegend').innerHTML=v==='off'?'':'<span>Оглядова карта, будинків OSM у шестикутнику ≈0,7 км²:</span>'+sw('hex1','1–19')+sw('hex2','20–59')+sw('hex3','60–149')+sw('hex4','150–399')+sw('hex5','400+');return}
   document.getElementById('hexlegend').innerHTML=v==='huff'?sw('hex1','до 5 %')+sw('hex2','5–15 %')+sw('hex3','15–30 %')+sw('hex4','30–50 %')+sw('hex5','50 % і більше'):v==='walk'?sw('hex5','до 400 м')+sw('hex4','до 800 м')+sw('hex3','до 1,2 км')+sw('hex2','до 1,6 км'):v==='bld'?sw('hex1','1–2')+sw('hex2','3–6')+sw('hex3','7–11')+sw('hex4','12–19')+sw('hex5','20+ будинків'):''}
@@ -525,8 +615,7 @@ function layersBox(){const cnt={}; facs.forEach(f=>{if(f.kind==='comp'){const k=
   document.getElementById('layers').innerHTML=LAYERS.map(l=>'<label><input type="checkbox" id="ly-'+l[0]+'" '+(on[l[0]]?'checked':'')+'><span class="dot" style="background:var(--'+lc[l[0]]+');margin:0"></span>'+l[1]+' <span class="sub">'+(cnt[l[0]]||0)+'</span></label>').join('');
   LAYERS.forEach(l=>document.getElementById('ly-'+l[0]).onchange=e=>{on[l[0]]=e.target.checked;draw()})}
 function srcBox(){const m=B?B.meta:{medapt:5,K:0.369,cap:{supermarket:2500,convenience:300}}, rm=REG.meta, out=S.stores.filter(s=>s.lat==null||s.lon==null).map(s=>s.name), ov=Object.keys(S.areas).length;
-  document.getElementById('src').innerHTML='<h3>Джерела й метод</h3>'+
-  '<p><b>Карта, конкуренти, будинки, вулиці:</b> OpenStreetMap, файли <a href="'+esc(rm.src[0])+'" target="_blank" rel="noopener">Закарпатської</a> та <a href="'+esc(rm.src[1])+'" target="_blank" rel="noopener">Івано-Франківської</a> областей, дані до '+esc(rm.osm)+'. Ліцензія '+esc(rm.license)+'.</p>'+
+  document.getElementById('src').innerHTML=  '<p><b>Карта, конкуренти, будинки, вулиці:</b> OpenStreetMap, файли <a href="'+esc(rm.src[0])+'" target="_blank" rel="noopener">Закарпатської</a> та <a href="'+esc(rm.src[1])+'" target="_blank" rel="noopener">Івано-Франківської</a> областей, дані до '+esc(rm.osm)+'. Ліцензія '+esc(rm.license)+'.</p>'+
   '<p><b>Ваші магазини, кандидати, площі, чеки, класи мереж:</b> ваша Google Таблиця, прочитано '+esc(S.read)+'.</p>'+
   ((S.extra||[]).length?'<p><b>Конкуренти, яких немає в OSM:</b> '+S.extra.length+' додано у вкладці «Додаткові конкуренти» вашої таблиці.</p>':'')+
   '<p><b>Зони 400 і 800 м:</b> шлях пішки вулицями й доріжками OSM; точка прив\'язується до найближчого перехрестя.</p>'+
@@ -536,12 +625,89 @@ function srcBox(){const m=B?B.meta:{medapt:5,K:0.369,cap:{supermarket:2500,conve
   '<p><b>Покриття:</b> обидві області цілком. Деталі рахуються квадратами ≈7×8 км ('+REG.tiles.length+' квадратів) із запасом ≈3 км навколо, тож зона пішки й модель Хаффа біля краю квадрата не обрізаються. Оглядова щільність забудови — шестикутники ≈0,7 км².</p>'+
   '<p><b>Обмеження:</b> OSM складають добровольці, тому частини магазинів може не бути, а закриті можуть лишатися. Жителів, доходів і людинопотоку тут немає: перевіреного відкритого джерела на рівні кварталу немає.</p>'}
 
+// ---------- порівняння всіх точок: по черзі підвантажує ділянку кожної точки й рахує однакові показники
+let BENCH=null, CMP=null, cmpSort={k:null,dir:-1}, cmpFilter='all', busy=false;
+const TCACHE=new Map();
+async function getTile(key){ if(TCACHE.has(key))return TCACHE.get(key); const b=await (await fetch('data/t/'+key+'.json',{cache:'no-cache'})).json(); if(TCACHE.size>=24)TCACHE.delete(TCACHE.keys().next().value); TCACHE.set(key,b); return b}
+async function computeAll(progress){ const L=regionList(), groups=new Map();
+  L.forEach(r=>{const t=tileOfQ(r.q), k=t[0]+'_'+t[1]; if(!groups.has(k))groups.set(k,[]); groups.get(k).push(r)});
+  const keep=sel>=0&&facs[sel]?{kind:facs[sel].kind,name:facs[sel].name}:null, keepKey=tileKey, rows=[]; let done=0; busy=true;
+  try{ for(const [key,list] of groups){ progress(done,L.length);
+      let ok=false; if(TILES.has(key)){ try{ B=await getTile(key); tileKey=key; KXq=B.meta.kxq||KXq; KYq=B.meta.kyq||KYq; buildGraph(); buildFacs(); ok=true }catch(e){} }
+      for(const r of list){ const j=ok&&qIn(r.q)?facs.findIndex(f=>f.kind===r.kind&&f.name===r.name):-1; let m;
+        if(j>=0)m=metricsFor(j); else m={kind:r.kind,temp:!!r.temp,name:r.name,nodata:true};
+        m.city=cityOf(r); m.r=r; if(m.area==null){const s0=(r.kind==='own'?S.stores:S.cands).find(x=>x.name===r.name); if(s0&&+s0.area){m.area=+s0.area; m.areaFromSheet=true}}
+        rows.push(m); done++; progress(done,L.length); await new Promise(z=>setTimeout(z,0)) } }
+  } finally { busy=false; B=null; tileKey=null; facs=[]; sel=-1; cache={};
+    if(keepKey){const [i,j]=keepKey.split('_').map(Number); await loadTile(i,j); if(keep){sel=facs.findIndex(f=>f.kind===keep.kind&&f.name===keep.name)} } }
+  const med=k=>{const a=rows.filter(r=>r.kind==='own'&&r[k]!=null&&!r.nodata).map(r=>r[k]).sort((x,y)=>x-y); if(!a.length)return null; const h=a.length>>1; return a.length%2?a[h]:(a[h-1]+a[h])/2};
+  BENCH={}; ['area','bld10','comp5','comp10','direct10','nearDirect','gen10','stops10','share10','checks'].forEach(k=>BENCH[k]=med(k));
+  CMP=rows; card(); return rows}
+const CCOLS=[['name','Точка'],['type','Тип'],['city','Населений пункт'],['area','Площа, м²'],['bld10','Будинків за 10 хв пішки'],['comp5','Конкурентів за 5 хв'],['comp10','Конкурентів за 10 хв'],['direct10','з них прямих'],['nearDirect','До прямого конкурента, м пішки'],['gen10','Зупинки, школи, лікарні, ТЦ, ринки за 10 хв'],['share10','Частка покупців 10-хв зони (модель)'],['checks','Чеків на місяць'],['cannib','Забере у ваших, чеків/міс. (модель)']];
+function cval(r,k){ if(k==='type')return r.kind==='own'?'ваш магазин':r.temp?'точка на карті':'кандидат'; return r[k]}
+function ccell(r,k){ const v=r[k];
+  if(k==='name')return esc(r.kind==='own'?'SPAR «'+r.name+'»':r.name); if(k==='type'||k==='city')return esc(cval(r,k));
+  if(r.nodata&&k!=='area')return '—'; if(v==null)return '—';
+  if(k==='share10')return pct(v); if(k==='checks')return fmt(v)+'<span class="m">'+esc(r.checksSrc)+'</span>'; if(k==='cannib')return v?'−'+fmt(v):'0';
+  if(k==='area')return fmt(v)+(r.areaFromSheet?'':'<span class="m">оцінка</span>'); return fmt(v)}
+async function openCompare(){ const o=document.getElementById('compare'); o.hidden=false; setPlacing(false);
+  if(!CMP){ document.getElementById('cmpbody').innerHTML='<h2 id="cmpttl">Порівняння всіх точок</h2><p class="sub" id="cmpprog">Рахую показники…</p>';
+    try{ await computeAll((d,n)=>{const p=document.getElementById('cmpprog'); if(p)p.textContent='Рахую показники: '+d+' з '+n+' точок. Кожна точка рахується на своїй ділянці карти, це може зайняти до хвилини.'}) }
+    catch(e){ document.getElementById('cmpbody').innerHTML='<h2>Порівняння всіх точок</h2><p class="note">Не вдалося порахувати: '+esc(e.message||e)+'</p><button class="btn" id="cmpx" type="button">Закрити</button>'; document.getElementById('cmpx').onclick=closeCompare; return } }
+  renderCompare()}
+function closeCompare(){ document.getElementById('compare').hidden=true; draw() }
+function renderCompare(){ const cities=[...new Set(CMP.map(r=>r.city))].sort((a,b)=>a.localeCompare(b,'uk'));
+  let rows=CMP.filter(r=>cmpFilter==='all'||(cmpFilter==='own'?r.kind==='own':cmpFilter==='cand'?r.kind==='cand':r.city===cmpFilter));
+  if(cmpSort.k){const k=cmpSort.k, d=cmpSort.dir; rows=rows.slice().sort((a,b)=>{const x=cval(a,k),y=cval(b,k); if(x==null&&y==null)return 0; if(x==null)return 1; if(y==null)return -1; return (typeof x==='string'?x.localeCompare(y,'uk'):x-y)*d})}
+  const bm=BENCH, brow='<tr class="bench"><td>Медіана ваших магазинів</td><td></td><td></td>'+CCOLS.slice(3).map(([k])=>'<td>'+(k==='cannib'?'':bm[k]==null?'—':k==='share10'?pct(bm[k]):fmt(bm[k]))+'</td>').join('')+'</tr>';
+  document.getElementById('cmpbody').innerHTML='<div class="row" style="justify-content:space-between"><h2 id="cmpttl" style="margin:0">Порівняння всіх точок</h2><div class="row"><button class="btn" id="cmpcsv" type="button">Завантажити CSV</button><button class="btn" id="cmpre" type="button">Перерахувати</button><button class="btn primary" id="cmpx" type="button">Закрити</button></div></div>'+
+   '<div class="sub" style="margin-top:6px">Однакові показники для кожної точки. Клацніть на рядок, щоб відкрити точку на карті; на заголовок — щоб відсортувати. «—» означає, що даних немає. Позначка «модель» — розрахунок за моделлю Хаффа, а не факт; «оцінка» біля площі — площу не вказано в таблиці.</div>'+
+   '<div class="row" style="margin-top:10px"><label class="sub" for="cmpf">Показати</label><select id="cmpf"><option value="all">Усі точки ('+CMP.length+')</option><option value="own">Тільки ваші магазини</option><option value="cand">Тільки кандидати</option>'+cities.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select></div>'+
+   '<div class="cmp"><table><thead><tr>'+CCOLS.map(([k,l])=>'<th data-k="'+k+'"'+(cmpSort.k===k?' aria-sort="'+(cmpSort.dir>0?'ascending':'descending')+'"':'')+'>'+l+'</th>').join('')+'</tr></thead><tbody>'+brow+
+   rows.map(r=>'<tr class="'+(r.kind==='cand'?'cand':'')+'" data-i="'+CMP.indexOf(r)+'">'+CCOLS.map(([k])=>'<td>'+ccell(r,k)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+  document.getElementById('cmpf').value=cmpFilter; document.getElementById('cmpf').onchange=e=>{cmpFilter=e.target.value; renderCompare()};
+  document.getElementById('cmpx').onclick=closeCompare;
+  document.getElementById('cmpre').onclick=()=>{CMP=null; BENCH=null; openCompare()};
+  document.getElementById('cmpcsv').onclick=csvCompare;
+  document.querySelectorAll('.cmp thead th').forEach(th=>th.onclick=()=>{const k=th.dataset.k; cmpSort=cmpSort.k===k?{k,dir:-cmpSort.dir}:{k,dir:(k==='name'||k==='type'||k==='city')?1:-1}; renderCompare()});
+  document.querySelectorAll('.cmp tbody tr[data-i]').forEach(tr=>tr.onclick=()=>{const r=CMP[+tr.dataset.i]; closeCompare(); focusFac(r.r)})}
+function csvCompare(){ const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"', raw=(r,k)=>{ if(k==='type'||k==='name'||k==='city')return cval(r,k); if(r.nodata&&k!=='area')return ''; const v=r[k]; if(v==null)return ''; return k==='share10'?(v*100).toFixed(1).replace('.',','):String(Math.round(v)) };
+  const lines=[CCOLS.map(c=>q(c[1])).concat([q('Джерело чеків')]).join(';')].concat(CMP.map(r=>CCOLS.map(([k])=>q(raw(r,k))).concat([q(r.checksSrc||'')]).join(';')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='порівняння_точок_'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+// ---------- легенда на карті та інструкція
+function legend(){ const el=document.getElementById('legend'); if(!S){el.hidden=true;return} el.hidden=false;
+  const c=k=>'<span class="sym" style="border-radius:50%;background:var(--'+k+')"></span>';
+  el.innerHTML='<details open style="border:0;padding:0"><summary style="font-size:11px">Умовні позначки</summary><div style="display:grid;gap:3px;margin-top:5px"><div class="li"><span class="sym" style="border-radius:50%;background:var(--own);border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line)"></span>Ваш магазин</div>'+
+   '<div class="li"><span class="sym" style="background:var(--cand)"></span>Кандидат / нова точка</div>'+
+   '<div class="li">'+c('direct')+'Прямі конкуренти</div><div class="li">'+c('format')+'Конкуренти за форматом</div><div class="li">'+c('local')+'Місцеві мережі</div><div class="li">'+c('other')+'Інші продуктові</div>'+
+   '<div class="li hidep"><span class="sym" style="background:var(--magnet);transform:rotate(45deg) scale(.8)"></span>Школи, лікарні, ТЦ, ринки</div>'+
+   '<div class="li"><span class="sym" style="height:0;border-top:2.4px solid var(--zone);width:16px"></span>10 хв пішки (≈800 м)</div><div class="li"><span class="sym" style="height:0;border-top:2px dashed var(--zone);width:16px"></span>5 хв пішки (≈400 м)</div></div></details>'}
+function openHelp(){ const tabsHelp=[['Магазини','ваші магазини: назва, місто, адреса, площа, формат, дата відкриття, широта, довгота'],['Кандидати','адреси, які розглядаєте: назва, адреса, широта, довгота, площа, примітка; «що відомо» і «оцінка» — пункти через «|»'],['Чеки','по магазинах і місяцях: магазин, місяць, кількість чеків, виторг. Без чеків немає прогнозу для кандидатів'],['Площі конкурентів','уточнена торгова площа конкурента замість оцінки за контуром будівлі'],['Додаткові конкуренти','магазини, яких немає в OpenStreetMap: назва, мережа, широта, довгота, площа, джерело'],['Класи мереж','яка мережа до якого класу належить: прямі, за форматом, місцеві мережі']];
+  document.getElementById('helpbody').innerHTML='<div class="row" style="justify-content:space-between"><h2 id="helpttl" style="margin:0">Як користуватися геоаналітикою</h2><button class="btn primary" id="helpx" type="button">Зрозуміло</button></div>'+
+  '<p>Інструмент відповідає на питання <b>«чи варто відкривати магазин тут і чого чекати»</b>: хто конкурує поруч, скільки забудови в пішій доступності, що приводить людей, скільки чеків можна очікувати і скільки покупців нова точка забере у ваших магазинів.</p>'+
+  '<div class="steps"><div class="step"><span class="n">1</span><div><b>Оцінити нову адресу.</b> Праворуч «Оцінити нову адресу», потім клацніть на карті в потрібному місці. Вкажіть площу майбутнього магазину. Точка тимчасова, у таблицю не записується. Щоб кандидат зберігся для всіх, додайте його у вкладку «Кандидати».</div></div>'+
+  '<div class="step"><span class="n">2</span><div><b>Подивитися свій магазин або кандидата.</b> Оберіть зі списку праворуч або клацніть на значок на карті. Угорі картки блок «Коротко» — шість головних показників і медіана ваших магазинів для порівняння.</div></div>'+
+  '<div class="step"><span class="n">3</span><div><b>Порівняти всі точки.</b> Кнопка «Порівняти всі точки» угорі. Таблицю можна сортувати, фільтрувати за містом і завантажити в Excel (CSV).</div></div>'+
+  '<div class="step"><span class="n">4</span><div><b>Показати керівництву.</b> У картці точки «Друк / PDF» — карта з зонами і всі показники на одному аркуші.</div></div></div>'+
+  '<h3>Як читати карту</h3><ul><li>Суцільний контур — куди можна дійти від точки за 10 хвилин вулицями, пунктир — за 5 хвилин.</li><li>Зелена заливка — звідки, за моделлю, прийдуть покупці: чим темніше, тим більша частка покупців кварталу обере цю точку. Змінити заливку можна в розділі «Що показати на карті».</li><li>Наблизьте карту колесом миші, щоб побачити вулиці й конкурентів. Наведіть на значок — з\'явиться назва й джерело.</li></ul>'+
+  '<h3>Що означають позначки</h3><ul><li><b>OpenStreetMap</b> — відкриті дані карти, дата оновлення вказана вгорі сторінки.</li><li><b>Ваша таблиця · факт</b> — з Google Таблиці «Геоаналітика — дані».</li><li><b>Модель · оцінка</b> — розрахунок, а не факт. Він не враховує транзит, туристів, ціни й асортимент.</li><li><b>«—» або «Немає даних»</b> — даних немає; цифри ніколи не підставляються.</li></ul>'+
+  '<h3>Для тих, хто заповнює таблицю</h3><ul>'+tabsHelp.map(t=>'<li><b>'+t[0]+'</b> — '+t[1]+'.</li>').join('')+'</ul><p class="sub">Координати: у Google Maps клацніть правою кнопкою на місці й скопіюйте два числа (широта, довгота). Після змін у таблиці натисніть угорі «Оновити з таблиці».</p>';
+  document.getElementById('help').hidden=false; document.getElementById('helpx').onclick=closeHelp; document.getElementById('helpx').focus()}
+function closeHelp(){ document.getElementById('help').hidden=true; try{localStorage.setItem('geoHelpSeen','1')}catch(e){} }
+document.getElementById('helpbtn').onclick=openHelp;
+document.getElementById('cmpbtn').onclick=openCompare;
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!document.getElementById('help').hidden)closeHelp(); else if(!document.getElementById('compare').hidden)closeCompare() } });
+addEventListener('beforeprint',()=>document.querySelectorAll('#card details').forEach(d=>{d.dataset.was=d.open?'1':''; d.open=true}));
+addEventListener('afterprint',()=>document.querySelectorAll('#card details').forEach(d=>{d.open=!!d.dataset.was}));
+
 // ---------- boot
-async function loadSheet(){S=await getSheetData(); S.areas=S.areas||{}; S.classes=S.classes||[]; S.checks=S.checks||[]; S.cands=S.cands||[];
+async function loadSheet(){S=await getSheetData(); CMP=null; BENCH=null; S.areas=S.areas||{}; S.classes=S.classes||[]; S.checks=S.checks||[]; S.cands=S.cands||[];
   const keepSel=sel>=0&&facs[sel]&&facs[sel].name; if(B){buildFacs(); sel=facs.findIndex(f=>f.kind!=='comp'&&f.name===keepSel)} else {facs=[]; sel=-1}
   document.getElementById('reload').hidden=false;
   asof();
   if(S.sheetUrl){const a=document.getElementById('sheetlink'); a.href=S.sheetUrl; a.style.display=''}
+  document.getElementById('cmpbtn').hidden=false; legend();
   tabs(); layersBox(); srcBox(); card(); return true}
 function asof(){const t=new Date(REG.meta.osm); document.getElementById('asof').textContent='OpenStreetMap станом на '+(isNaN(t)?'—':t.toLocaleDateString('uk-UA',{timeZone:'UTC'}))+(S?' · таблицю прочитано '+S.read:' · увійдіть, щоб побачити ваші дані')}
 function fitRegion(){ if(!REG||!REG.tiles.length)return; const m=REG.meta; let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
@@ -562,7 +728,8 @@ async function boot(){try{
 addEventListener('hashchange',()=>{ if(REG)goHash() });
 document.getElementById('signin').onclick=async()=>{const m=document.getElementById('gatemsg'); m.textContent='Відкриваю вхід Google…';
   try{ await signIn('select_account'); m.textContent='Читаю таблицю…';
-    await loadSheet(); document.getElementById('gate').hidden=true; hexLegend(); syncOut(); draw() }
+    await loadSheet(); document.getElementById('gate').hidden=true; hexLegend(); syncOut(); draw();
+    let seen=null; try{seen=localStorage.getItem('geoHelpSeen')}catch(e){} if(!seen)openHelp() }
   catch(e){ m.textContent='Не вдалося: '+(e.message||e)+'.' } };
 document.getElementById('reload').onclick=async()=>{const b=document.getElementById('reload'); b.disabled=true; b.textContent='Читаю таблицю…'; try{await loadSheet(); draw()}catch(e){alert0('Не вдалося прочитати таблицю: '+(e.message||e))} b.disabled=false; b.textContent='Оновити з таблиці'};
 new ResizeObserver(resize).observe(cv.parentElement);
