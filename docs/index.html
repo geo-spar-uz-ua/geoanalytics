@@ -21,6 +21,10 @@
   --land:#161d1c; --water:#1d3442; --road:#2e3a38; --road-edge:#222c2a; --rail:#55615e;
   --own:#f2f6f5; --cand:#4fc7b0; --direct:#ff6b61; --format:#f2a53c; --local:#ef7fb6; --other:#8fa3b8; --spec:#5e6c69; --magnet:#a58cf0; --svc:#6d5ea3; --stop:#5aa9e6;
   --zone:#4fc7b0; --hex1:#1c2b28; --hex2:#1f433b; --hex3:#23604f; --hex4:#2c8a6f; --hex5:#4fc7b0; --warn:#f2a53c; color-scheme:dark; } }
+:root[data-theme="dark"]{--bg:#101615; --panel:#18201f; --ink:#e8eeec; --muted:#9aa8a4; --line:#2c3836; --accent:#4fc7b0;
+  --land:#161d1c; --water:#1d3442; --road:#2e3a38; --road-edge:#222c2a; --rail:#55615e;
+  --own:#f2f6f5; --cand:#4fc7b0; --direct:#ff6b61; --format:#f2a53c; --local:#ef7fb6; --other:#8fa3b8; --spec:#5e6c69; --magnet:#a58cf0; --svc:#6d5ea3; --stop:#5aa9e6;
+  --zone:#4fc7b0; --hex1:#1c2b28; --hex2:#1f433b; --hex3:#23604f; --hex4:#2c8a6f; --hex5:#4fc7b0; --warn:#f2a53c; color-scheme:dark;}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45;display:flex;flex-direction:column}
@@ -76,6 +80,16 @@ select,input[type=number],input[type=search]{font:inherit;padding:4px 6px;border
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .src{font-size:12px;color:var(--muted)} .src p{margin:0 0 6px}
 main{position:relative}
+#views{position:absolute;left:12px;top:12px;background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:6px;font-size:12px;max-width:260px;z-index:2}
+#views .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+#views .seg button{flex:1;border:0;background:transparent;color:var(--ink);padding:5px 8px;font:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+#views .seg button+button{border-left:1px solid var(--line)}
+#views .seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+#views select{width:100%;font-size:12px}
+#views .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+#views summary{font-size:11px}
+#esri{position:absolute;right:8px;bottom:6px;font-size:10.5px;color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;max-width:60%;text-align:right}
+#esri[hidden]{display:none}
 #tabs{display:none!important}
 .home-actions{display:grid;gap:8px;margin:10px 0 16px}
 .action{display:grid;grid-template-columns:28px 1fr;gap:2px 10px;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit}
@@ -96,6 +110,8 @@ details>*:not(summary){margin-top:8px}
 #card details{margin-top:12px}
 #legend{position:absolute;left:8px;bottom:56px;background:color-mix(in srgb,var(--panel) 93%,transparent);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;display:grid;gap:3px;max-width:250px}
 #legend[hidden]{display:none}
+#legend{max-height:calc(100% - 110px);overflow:auto}
+#views{max-height:calc(100% - 24px);overflow:auto}
 #legend .li{display:flex;align-items:center;gap:7px}
 .sym{display:inline-block;width:11px;height:11px;flex:none}
 #help,#compare{position:absolute;inset:0;z-index:20;background:color-mix(in srgb,var(--bg) 75%,transparent);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:22px 16px}
@@ -143,6 +159,13 @@ details>*:not(summary){margin-top:8px}
     <div id="tip"></div>
     <div class="attr">© OpenStreetMap contributors</div>
     <div id="legend" hidden></div>
+    <div id="views"><details open style="border:0;padding:0"><summary>Вигляд карти</summary><div style="display:grid;gap:6px;margin-top:6px">
+      <div class="seg" role="group" aria-label="Фон карти"><button type="button" data-bg="scheme" aria-pressed="true">Схема</button><button type="button" data-bg="sat" aria-pressed="false">Супутник</button></div>
+      <div class="seg" role="group" aria-label="Кольори"><button type="button" data-th="light" aria-pressed="false">Світла</button><button type="button" data-th="dark" aria-pressed="false">Темна</button><button type="button" data-th="auto" aria-pressed="true">Як у системі</button></div>
+      <label class="lbl" for="thm">Аналітичний шар</label>
+      <select id="thm"><option value="none">Немає</option><option value="compdens">Щільність конкурентів</option><option value="coverage">Покриття вашою мережею</option><option value="gaps">Забудова без продуктових поруч</option></select>
+    </div></details></div>
+    <div id="esri" hidden>Супутник: Esri, Maxar, Earthstar Geographics, GIS User Community · Powered by Esri</div>
   </div>
   <div id="help" hidden role="dialog" aria-modal="true" aria-labelledby="helpttl"><div class="sheet" id="helpbody"></div></div>
   <div id="compare" hidden role="dialog" aria-modal="true" aria-labelledby="cmpttl"><div class="sheet" id="cmpbody"></div></div>
@@ -375,8 +398,10 @@ function detail(){return view.s>=DETAIL_S}
 function render(){ need=false; if(!REG||!W||busy)return; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle=col.land; ctx.fillRect(0,0,W,H);
   const s=view.s, det=detail()&&!!B;
   if(lastDet!==detail()){lastDet=detail(); hexLegend()}
+  if(VIEW.bg==='sat')drawSat();
   drawOverview(det);
   if(det)drawTile(s);
+  if(S&&VIEW.thm!=='none')drawThematic();
   if(S)drawMarks(det);
   const bar=[100000,50000,20000,10000,5000,2000,1000,500,200,100,50].find(m=>m*s<140)||50, bx=14, by=H-30;
   ctx.textAlign='left'; ctx.fillStyle=col.panel; ctx.globalAlpha=.85; ctx.fillRect(bx-6,by-18,bar*s+12,26); ctx.globalAlpha=1; ctx.fillStyle=col.ink; ctx.fillRect(bx,by,bar*s,2); ctx.font='500 11px Onest, sans-serif'; ctx.fillText(bar>=1000?(bar/1000)+' км':bar+' м',bx,by-5);
@@ -384,24 +409,25 @@ function render(){ need=false; if(!REG||!W||busy)return; ctx.setTransform(dpr,0,
 // Оглядовий шар обох областей: щільність забудови, головні дороги, магазини, населені пункти
 function densColor(n){return n>=400?col.hex5:n>=150?col.hex4:n>=60?col.hex3:n>=20?col.hex2:col.hex1}
 function drawOverview(det){const s=view.s;
-  if(!det&&document.getElementById('hexmode').value!=='off'){const r=Math.max(1.6,460*s); ctx.globalAlpha=.75;
+  if(!det&&VIEW.bg!=='sat'&&VIEW.thm==='none'&&document.getElementById('hexmode').value!=='off'){const r=Math.max(1.6,460*s); ctx.globalAlpha=.75;
     REG.dens.forEach(d=>{const x=sx(d[0]),y=sy(d[1]); if(x<-r||x>W+r||y<-r||y>H+r)return; ctx.fillStyle=densColor(d[2]); ctx.fillRect(x-r,y-r,2*r,2*r)}); ctx.globalAlpha=1}
-  lines(REG.roads.b,Math.max(.8,5*s),col['road-edge']); lines(REG.roads.a,Math.max(1.2,8*s),col['road-edge']);
-  if(!det){ lines(REG.roads.a,Math.max(.6,6*s),col.road);
+  if(VIEW.bg!=='sat'){ lines(REG.roads.b,Math.max(.8,5*s),col['road-edge']); lines(REG.roads.a,Math.max(1.2,8*s),col['road-edge']) }
+  if(!det){ if(VIEW.bg!=='sat')lines(REG.roads.a,Math.max(.6,6*s),col.road);
     if(S)['other','local','format','direct'].forEach(k=>{ if(!on[k])return; REG.groc.forEach(g=>{ if(CK[gcls(g)]!==k)return; const x=sx(g[0]),y=sy(g[1]); if(x<-4||x>W+4||y<-4||y>H+4)return; ctx.beginPath(); ctx.arc(x,y,s>.012?3.2:2,0,6.3); ctx.fillStyle=col[k]; ctx.fill() }) });
     ctx.textAlign='center'; REG.places.forEach(p=>{ const big=p[1]==='city'||p[1]==='town'; if(!big&&s<.012)return; const x=sx(p[2]),y=sy(p[3]); if(x<0||x>W||y<0||y>H)return;
       ctx.font=(big?'600 12px':'500 10.5px')+' Onest, sans-serif'; ctx.lineWidth=3; ctx.strokeStyle=col.panel; ctx.strokeText(p[0],x,y-6); ctx.fillStyle=big?col.ink:col.muted; ctx.fillText(p[0],x,y-6) }); ctx.textAlign='left' }}
 function gcls(g){ if(g._c===undefined||g._cv!==S.classes){g._c=classify({n:g[2],b:g[3]}); g._cv=S.classes} return g._c}
 // Деталі завантаженої ділянки
 function drawTile(s){ const f=sel>=0?facs[sel]:null;
-  ctx.fillStyle=col.water; ctx.beginPath(); B.water.forEach(w=>{if(w[0]==='p')poly(w[1],true)}); ctx.fill();
-  lines(B.water.filter(w=>w[0]==='l').map(w=>w[1]),Math.max(1.5,10*s),col.water);
+  const sat=VIEW.bg==='sat';
+  if(!sat){ ctx.fillStyle=col.water; ctx.beginPath(); B.water.forEach(w=>{if(w[0]==='p')poly(w[1],true)}); ctx.fill();
+  lines(B.water.filter(w=>w[0]==='l').map(w=>w[1]),Math.max(1.5,10*s),col.water) }
   const hm=document.getElementById('hexmode').value;
   if(S&&hm!=='off'&&(f||hm==='bld')){const P=f?(f.kind==='cand'?scenario(true):scenario(false)):null; ctx.globalAlpha=.6; B.hex.forEach((h,i)=>{const c=hexColor(h,i,P); if(!c)return; ctx.beginPath(); poly(h[0],true); ctx.fillStyle=c; ctx.fill()}); ctx.globalAlpha=1}
-  if(s>0.28)lines(B.roads.c,Math.max(.6,2*s),col['road-edge']);
+  if(!sat){ if(s>0.28)lines(B.roads.c,Math.max(.6,2*s),col['road-edge']);
   lines(B.roads.b,Math.max(1,7*s)+1.2,col['road-edge']); lines(B.roads.a,Math.max(1.6,11*s)+1.4,col['road-edge']);
   lines(B.roads.b,Math.max(1,7*s),col.road); lines(B.roads.p,Math.max(1,6*s),col.road); lines(B.roads.a,Math.max(1.6,11*s),col.road);
-  lines(B.rail,1.2,col.rail,[6,4]);
+  lines(B.rail,1.2,col.rail,[6,4]) }
   if(!S)return;
   // зони пішки: контур 800 м (суцільний) і 400 м (штрихи), як у першій версії; інші ваші магазини — сірий пунктир 800 м
   facs.forEach((o,j)=>{ if(o.kind!=='own'||j===sel||!o.D)return; ctx.beginPath(); isoContour(o,800).forEach(l=>poly(l,true)); ctx.lineWidth=1; ctx.strokeStyle=col.muted; ctx.setLineDash([3,4]); ctx.stroke(); ctx.setLineDash([]) });
@@ -623,7 +649,59 @@ function srcBox(){const m=B?B.meta:{medapt:5,K:0.369,cap:{supermarket:2500,conve
   '<p><b>Площі конкурентів:</b> '+(ov?ov+' введено у вашій таблиці; решта — ':'')+'контур будівлі OSM × '+String(m.K).replace('.',',')+' (медіанне відношення торгової площі до контуру ваших магазинів), не більше '+m.cap.supermarket+' м² для супермаркету і '+m.cap.convenience+' м² для магазину біля дому.</p>'+
   (out.length?'<p><b>Без координат у таблиці:</b> '+out.map(esc).join(', ')+'. На карту вони потраплять, щойно у вкладці «Магазини» з\'являться широта й довгота.</p>':'')+
   '<p><b>Покриття:</b> обидві області цілком. Деталі рахуються квадратами ≈7×8 км ('+REG.tiles.length+' квадратів) із запасом ≈3 км навколо, тож зона пішки й модель Хаффа біля краю квадрата не обрізаються. Оглядова щільність забудови — шестикутники ≈0,7 км².</p>'+
+  (VIEW.bg==='sat'?'<p><b>Супутниковий фон:</b> Esri World Imagery (Esri, Maxar, Earthstar Geographics, GIS User Community). Дата знімків різна для різних ділянок. Умови Esri для комерційного використання без підписки ArcGIS неоднозначні, тож фон варто використовувати для огляду, а не публікувати знімки назовні.</p>':'')+
+  (VIEW.thm==='compdens'?'<p><b>Щільність конкурентів:</b> продуктові магазини OSM, крім вашої мережі, пораховано в квадратах 1×1 км.</p>':VIEW.thm==='coverage'?'<p><b>Покриття мережею:</b> коло 800 м по прямій навколо кожного магазину й кандидата з таблиці. Пішу зону вулицями показує картка точки.</p>':VIEW.thm==='gaps'?'<p><b>Забудова без продуктових:</b> шестикутники ≈0,7 км² зі 150+ будинками OSM, у яких найближчий продуктовий (OSM або ваша таблиця) далі 800 м по прямій. Це правило відбору, не висновок.</p>':'')+
   '<p><b>Обмеження:</b> OSM складають добровольці, тому частини магазинів може не бути, а закриті можуть лишатися. Жителів, доходів і людинопотоку тут немає: перевіреного відкритого джерела на рівні кварталу немає.</p>'}
+
+// ---------- вигляди карти: фон (схема / супутник), кольори, аналітичні шари
+const VIEW={bg:'scheme',th:'auto',thm:'none'};
+try{ Object.assign(VIEW,JSON.parse(localStorage.getItem('geoView')||'{}')) }catch(e){}
+function saveView(){ try{localStorage.setItem('geoView',JSON.stringify(VIEW))}catch(e){} }
+if(innerWidth<820)document.querySelectorAll('#views details').forEach(d=>d.open=false);
+function applyView(){ const de=document.documentElement; if(VIEW.th==='auto')de.removeAttribute('data-theme'); else de.setAttribute('data-theme',VIEW.th);
+  document.querySelectorAll('#views [data-bg]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.bg===VIEW.bg));
+  document.querySelectorAll('#views [data-th]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.th===VIEW.th));
+  document.getElementById('thm').value=VIEW.thm; document.getElementById('esri').hidden=VIEW.bg!=='sat';
+  readColors(); legend(); hexLegend(); if(S)srcBox(); draw() }
+document.querySelectorAll('#views [data-bg]').forEach(b=>b.onclick=()=>{VIEW.bg=b.dataset.bg; saveView(); applyView()});
+document.querySelectorAll('#views [data-th]').forEach(b=>b.onclick=()=>{VIEW.th=b.dataset.th; saveView(); applyView()});
+document.getElementById('thm').onchange=e=>{VIEW.thm=e.target.value; THM=null; saveView(); applyView()};
+// супутникові плитки Esri World Imagery (Web Mercator), розтягнуті в нашу локальну проекцію
+const SATC=new Map();
+function q2ll(qx,qy){const o=REG.meta.origin; return [qx/1e5+o[0],qy/1e5+o[1]]}
+function ll2q(lon,lat){const o=REG.meta.origin; return [(lon-o[0])*1e5,(lat-o[1])*1e5]}
+function tlon(x,z){return x/2**z*360-180} function tlat(y,z){const n=Math.PI*(1-2*y/2**z); return Math.atan(Math.sinh(n))*180/Math.PI}
+function drawSat(){ const c=q2ll((W/2-view.tx)/view.s/DXq,-(H/2-view.ty)/view.s/DYq), mpp=1/view.s;
+  let z=Math.round(Math.log2(40075016*Math.cos(c[1]*Math.PI/180)/(256*mpp))); z=Math.max(7,Math.min(19,z));
+  const a=q2ll((0-view.tx)/view.s/DXq,-(0-view.ty)/view.s/DYq), b=q2ll((W-view.tx)/view.s/DXq,-(H-view.ty)/view.s/DYq), n=2**z;
+  const tx=lon=>Math.floor((lon+180)/360*n), ty=lat=>{const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n)};
+  const x0=tx(a[0]),x1=tx(b[0]),y0=ty(a[1]),y1=ty(b[1]); if((x1-x0+1)*(y1-y0+1)>140)return;
+  ctx.fillStyle='#1b1f1e'; ctx.fillRect(0,0,W,H);
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){ const k=z+'/'+y+'/'+x; let im=SATC.get(k);
+    if(!im){ im=new Image(); im.onload=()=>draw(); im.src='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+k; SATC.set(k,im); if(SATC.size>600)SATC.delete(SATC.keys().next().value) }
+    if(!im.complete||!im.naturalWidth)continue;
+    const p0=ll2q(tlon(x,z),tlat(y,z)), p1=ll2q(tlon(x+1,z),tlat(y+1,z)), X0=sx(p0[0]),Y0=sy(p0[1]),X1=sx(p1[0]),Y1=sy(p1[1]);
+    ctx.drawImage(im,X0,Y0,X1-X0+.6,Y1-Y0+.6) } }
+// аналітичні шари: рахуються з шарів OSM на всю територію і з координат вашої таблиці
+let THM=null;
+function thmData(){ if(THM&&THM.cls===S.classes&&THM.k===VIEW.thm)return THM; const C=1000, cell=q=>Math.floor(q[0]*DXq/C)+','+Math.floor(q[1]*DYq/C);
+  const T={cls:S.classes,k:VIEW.thm};
+  if(VIEW.thm==='compdens'){ const m=new Map(); REG.groc.forEach(g=>{const c=gcls(g); if(c==='Власна мережа'||c==='Не конкурент')return; const k=cell(g); m.set(k,(m.get(k)||0)+1)}); T.cells=[...m].map(([k,n])=>{const [i,j]=k.split(',').map(Number); return [i*C/DXq,j*C/DYq,(i+1)*C/DXq,(j+1)*C/DYq,n]}) }
+  if(VIEW.thm==='gaps'){ const R=800, b=new Map(), add=q=>{const k=Math.floor(q[0]*DXq/R)+','+Math.floor(q[1]*DYq/R); (b.get(k)||b.set(k,[]).get(k)).push(q)};
+    REG.groc.forEach(g=>add([g[0],g[1]])); regionList().forEach(r=>add(r.q));
+    T.gaps=REG.dens.filter(d=>{ if(d[2]<150)return false; const i=Math.floor(d[0]*DXq/R), j=Math.floor(d[1]*DYq/R);
+      for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++){ const L=b.get((i+di)+','+(j+dj)); if(L&&L.some(q=>Math.hypot((q[0]-d[0])*DXq,(q[1]-d[1])*DYq)<=R))return false } return true }) }
+  return THM=T}
+function drawThematic(){ const t=thmData(), s=view.s;
+  if(VIEW.thm==='compdens'){ ctx.globalAlpha=.55; t.cells.forEach(c=>{const X0=sx(c[0]),Y1=sy(c[1]),X1=sx(c[2]),Y0=sy(c[3]); if(X1<0||X0>W||Y1<0||Y0>H)return; ctx.fillStyle=c[4]>=7?col.direct:c[4]>=4?col.format:c[4]>=2?col.local:col.other; ctx.fillRect(X0,Y0,X1-X0,Y1-Y0)}); ctx.globalAlpha=1 }
+  if(VIEW.thm==='coverage'){ const r=800*s; regionList().forEach(z=>{const x=sx(z.q[0]),y=sy(z.q[1]); if(x<-r||x>W+r||y<-r||y>H+r)return; ctx.beginPath(); ctx.arc(x,y,Math.max(r,3),0,6.3);
+      ctx.fillStyle=z.kind==='own'?col.zone:col.cand; ctx.globalAlpha=z.kind==='own'?.22:.1; ctx.fill(); ctx.globalAlpha=1; ctx.lineWidth=1.6; ctx.strokeStyle=z.kind==='own'?col.zone:col.cand; ctx.setLineDash(z.kind==='own'?[]:[5,4]); ctx.stroke(); ctx.setLineDash([]) }) }
+  if(VIEW.thm==='gaps'){ const r=Math.max(2.5,460*s); t.gaps.forEach(d=>{const x=sx(d[0]),y=sy(d[1]); if(x<-r||x>W+r||y<-r||y>H+r)return; ctx.fillStyle=col.warn; ctx.globalAlpha=d[2]>=400?.7:.35; ctx.fillRect(x-r,y-r,2*r,2*r); ctx.globalAlpha=1; ctx.lineWidth=1.2; ctx.strokeStyle=col.warn; ctx.strokeRect(x-r,y-r,2*r,2*r)}) } }
+function thmLegend(){ const sw=(c,t)=>'<div class="li"><span class="sym" style="background:var(--'+c+');opacity:.75"></span>'+t+'</div>';
+  if(VIEW.thm==='compdens')return '<div class="li" style="font-weight:600;margin-top:4px">Конкурентів на 1 км² (OSM)</div>'+sw('other','1')+sw('local','2–3')+sw('format','4–6')+sw('direct','7 і більше');
+  if(VIEW.thm==='coverage')return '<div class="li" style="font-weight:600;margin-top:4px">Коло 800 м по прямій</div>'+sw('zone','навколо вашого магазину')+'<div class="li"><span class="sym" style="border:1.5px dashed var(--cand)"></span>навколо кандидата</div>';
+  if(VIEW.thm==='gaps')return '<div class="li" style="font-weight:600;margin-top:4px">Щільна забудова без продуктових</div>'+sw('warn','150+ будинків на ≈0,7 км², найближчий продуктовий далі 800 м по прямій (яскравіше — 400+)')+'<div class="li sub">Правило відбору, а не висновок: магазин може бути, але не нанесений в OSM. Перевірте на місці.</div>';
+  return ''}
 
 // ---------- порівняння всіх точок: по черзі підвантажує ділянку кожної точки й рахує однакові показники
 let BENCH=null, CMP=null, cmpSort={k:null,dir:-1}, cmpFilter='all', busy=false;
@@ -676,13 +754,13 @@ function csvCompare(){ const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='порівняння_точок_'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 
 // ---------- легенда на карті та інструкція
-function legend(){ const el=document.getElementById('legend'); if(!S){el.hidden=true;return} el.hidden=false;
+function legend(){ const el=document.getElementById('legend'); if(!S||!REG){el.hidden=true;return} el.hidden=false;
   const c=k=>'<span class="sym" style="border-radius:50%;background:var(--'+k+')"></span>';
-  el.innerHTML='<details open style="border:0;padding:0"><summary style="font-size:11px">Умовні позначки</summary><div style="display:grid;gap:3px;margin-top:5px"><div class="li"><span class="sym" style="border-radius:50%;background:var(--own);border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line)"></span>Ваш магазин</div>'+
+  el.innerHTML='<details'+(innerWidth<820?'':' open')+' style="border:0;padding:0"><summary style="font-size:11px">Умовні позначки</summary><div style="display:grid;gap:3px;margin-top:5px"><div class="li"><span class="sym" style="border-radius:50%;background:var(--own);border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line)"></span>Ваш магазин</div>'+
    '<div class="li"><span class="sym" style="background:var(--cand)"></span>Кандидат / нова точка</div>'+
    '<div class="li">'+c('direct')+'Прямі конкуренти</div><div class="li">'+c('format')+'Конкуренти за форматом</div><div class="li">'+c('local')+'Місцеві мережі</div><div class="li">'+c('other')+'Інші продуктові</div>'+
    '<div class="li hidep"><span class="sym" style="background:var(--magnet);transform:rotate(45deg) scale(.8)"></span>Школи, лікарні, ТЦ, ринки</div>'+
-   '<div class="li"><span class="sym" style="height:0;border-top:2.4px solid var(--zone);width:16px"></span>10 хв пішки (≈800 м)</div><div class="li"><span class="sym" style="height:0;border-top:2px dashed var(--zone);width:16px"></span>5 хв пішки (≈400 м)</div></div></details>'}
+   '<div class="li"><span class="sym" style="height:0;border-top:2.4px solid var(--zone);width:16px"></span>10 хв пішки (≈800 м)</div><div class="li"><span class="sym" style="height:0;border-top:2px dashed var(--zone);width:16px"></span>5 хв пішки (≈400 м)</div>'+thmLegend()+'</div></details>'}
 function openHelp(){ const tabsHelp=[['Магазини','ваші магазини: назва, місто, адреса, площа, формат, дата відкриття, широта, довгота'],['Кандидати','адреси, які розглядаєте: назва, адреса, широта, довгота, площа, примітка; «що відомо» і «оцінка» — пункти через «|»'],['Чеки','по магазинах і місяцях: магазин, місяць, кількість чеків, виторг. Без чеків немає прогнозу для кандидатів'],['Площі конкурентів','уточнена торгова площа конкурента замість оцінки за контуром будівлі'],['Додаткові конкуренти','магазини, яких немає в OpenStreetMap: назва, мережа, широта, довгота, площа, джерело'],['Класи мереж','яка мережа до якого класу належить: прямі, за форматом, місцеві мережі']];
   document.getElementById('helpbody').innerHTML='<div class="row" style="justify-content:space-between"><h2 id="helpttl" style="margin:0">Як користуватися геоаналітикою</h2><button class="btn primary" id="helpx" type="button">Зрозуміло</button></div>'+
   '<p>Інструмент відповідає на питання <b>«чи варто відкривати магазин тут і чого чекати»</b>: хто конкурує поруч, скільки забудови в пішій доступності, що приводить людей, скільки чеків можна очікувати і скільки покупців нова точка забере у ваших магазинів.</p>'+
@@ -722,7 +800,7 @@ async function boot(){try{
   REG=await (await fetch(CONFIG.REGION,{cache:'no-cache'})).json(); DXq=REG.meta.kxq; DYq=REG.meta.kyq; TILES=new Set(REG.tiles.map(t=>t[0]+'_'+t[1]));
   const seen=new Set(); document.getElementById('placelist').innerHTML=REG.places.filter(p=>p[1]!=='hamlet').sort((a,b)=>({city:0,town:1,village:2}[a[1]]-{city:0,town:1,village:2}[b[1]])||a[0].localeCompare(b[0],'uk')).filter(p=>!seen.has(p[0])&&seen.add(p[0])).map(p=>'<option value="'+esc(p[0])+'">').join('');
   const go=document.getElementById('go'); go.onchange=()=>goPlace(go.value); go.onkeydown=e=>{if(e.key==='Enter')goPlace(go.value)};
-  document.getElementById('loading').style.display='none'; readColors(); resize(); if(!goHash())fitRegion(); asof(); hexLegend();
+  document.getElementById('loading').style.display='none'; applyView(); resize(); if(!goHash())fitRegion(); asof(); hexLegend();
   document.getElementById('gate').hidden=false;
  }catch(e){document.getElementById('loading').style.display=''; document.getElementById('loading').textContent='Не вдалося завантажити шари карти: '+(e&&e.message||e)}}
 addEventListener('hashchange',()=>{ if(REG)goHash() });
